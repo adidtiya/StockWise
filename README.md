@@ -29,34 +29,6 @@ Buka http://localhost:3000. Database `data/stockwise.db` dibuat otomatis saat se
 Akun demo juga bisa dipilih langsung dengan satu klik di halaman **Masuk**. Datanya otomatis dibuat ulang bila sudah basi
 (tidak ada penjualan kemarin) atau bila akun demo dihapus.
 
-## Pemenuhan ketentuan BAB 2 (Prototyping)
-
-| Ketentuan dosen | Halaman di aplikasi | Rute |
-|---|---|---|
-| Onboarding 3–5 screen | 4 slide: belanja tanpa menebak, forecast pola hari/event, Waste Risk Score, Freemium vs Pro | `#/onboarding` |
-| Sign In | Email + kata sandi, tombol akun demo | `#/login` |
-| Register (beberapa tipe user) | 3 langkah: data pemilik → profil usaha (warung / rumah makan / katering) → tipe akun **Freemium** atau **Pro** (+ simulasi pembayaran) | `#/register` |
-| Main screen | Beranda: penjualan hari ini vs forecast, bahan perlu dibeli, Waste Risk, akurasi, grafik, porsi yang masih bisa dibuat, event mendatang, tren waste | `#/dashboard` |
-| Business process | lihat tabel berikut | |
-| Profile | Ubah data pemilik & usaha, ganti kata sandi | `#/profil` |
-| Delete my account | Konfirmasi kata sandi + ketik `HAPUS`, seluruh data usaha terhapus (cascade) | `#/hapus-akun` |
-| Feedback | Rating bintang, kategori, pesan, riwayat feedback | `#/feedback` |
-
-### Business process StockWise (sesuai use case & alur di makalah Bab 1)
-
-| Tahap / Use case | Implementasi | Rute |
-|---|---|---|
-| Tahap 1 · UC-02 Atur profil & bahan | Bahan baku (satuan, kategori segar/tahan lama, umur simpan, harga), menu + komposisi resep per porsi, HPP & margin | `#/bahan`, `#/menu` |
-| Tahap 2 · UC-03 Input penjualan | Stepper per menu, kuota Freemium 300 transaksi/bulan | `#/penjualan` |
-| Tahap 2 · UC-04 Import Excel | Unggah .xlsx/.csv, unduh templat, **validasi** tanggal/nama/satuan/jumlah sebelum disimpan, konversi gram→kg & ml→liter | `#/import` |
-| Tahap 3 · Event tagging | Natal, Lebaran, Imlek, tanggal gajian, + event usaha sendiri; dampak yang **dipelajari** dari data ditampilkan | `#/event` |
-| Tahap 4 · UC-05/UC-08 Forecast | Per menu & per bahan, ditampilkan sebagai **rentang**; 7 hari (Freemium) / 14 & 30 hari (Pro); pola hari Senin–Minggu | `#/forecast` |
-| Tahap 5 · UC-06 Rekomendasi + UC-07 Waste Risk Score | Kebutuhan − stok layak pakai; periode harian (segar) / mingguan / bulanan (tahan lama); skor rendah/sedang/tinggi + saran tindakan & jumlah beli aman | `#/rekomendasi` |
-| Tahap 6 · Beli bahan, catat stok masuk · UC-09 Dashboard | "Tandai sudah dibeli" dari rekomendasi, catat stok masuk / bahan terbuang, stok per batch (FEFO) & tanggal kedaluwarsa | `#/rekomendasi`, `#/stok-masuk`, `#/bahan` |
-| Tahap 7 · Evaluasi & latih ulang | Akurasi (1 − WAPE) aktual vs forecast, akurasi per menu, tren nilai waste per minggu, tombol **Latih ulang model** | `#/evaluasi` |
-| UC-10 Riwayat transaksi | Penjualan (dengan label event & sumber), stok masuk, bahan terbuang | `#/riwayat` |
-| Tahap 8 · UC-11 Berlangganan Pro | Perbandingan paket, checkout Rp100.000/bulan (simulasi), perpanjang, berhenti | `#/langganan` |
-| UC-13 Sinkronisasi API (Pro) | Hubungkan MokaPOS, GoFood, GrabFood, ShopeeFood; tombol sinkron | `#/integrasi` |
 
 ### Yang masih berupa simulasi (sebutkan di makalah)
 
@@ -76,7 +48,7 @@ komposisi resep menjadi kebutuhan bahan. Rentang ketidakpastian berasal dari err
 kedaluwarsa dihitung sebagai potensi waste. Rasio waste terhadap stok + rencana beli: < 10% rendah, 10–30% sedang, > 30% tinggi.
 Model dilatih ulang otomatis setiap 24 jam atau lewat tombol di halaman Evaluasi.
 
-## Tech stack (bahan Bab 2 D)
+## Tech stack 
 
 | Komponen | Teknologi | Alasan singkat |
 |---|---|---|
@@ -89,12 +61,7 @@ Model dilatih ulang otomatis setiap 24 jam atau lewat tombol di halaman Evaluasi
 Keamanan: kata sandi di-hash dengan **scrypt** + salt, sesi memakai cookie `httpOnly` bertanda tangan HMAC,
 semua query memakai prepared statement, dan setiap data dicek kepemilikannya per pengguna.
 
-## Deploy agar bisa diakses lewat internet (Render.com, gratis)
 
-1. Unggah folder ini ke repository GitHub (folder `node_modules` dan `data` tidak perlu, sudah ada di `.gitignore`).
-2. Di https://render.com → **New → Blueprint**, pilih repository tersebut. File `render.yaml` sudah menyiapkan
-   build `npm install`, start `npm start`, Node 22, dan `SESSION_SECRET` acak.
-3. Setelah selesai, URL berbentuk `https://stockwise-xxxx.onrender.com` bisa dicantumkan sebagai **URL Prototyping**.
 
 Catatan paket gratis Render: server tidur setelah ±15 menit tanpa pengunjung (akses pertama butuh ±30–60 detik) dan
 disk tidak permanen, sehingga akun baru yang didaftarkan bisa hilang saat server restart. **Akun demo selalu dibuat
