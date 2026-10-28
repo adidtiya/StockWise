@@ -134,7 +134,7 @@ function renderShell() {
     <div class="app">
       <aside class="sidebar">
         <a class="brand" href="#/dashboard" style="text-decoration:none;color:inherit">
-          <img src="/img/logo.svg" alt="" />
+          <img src="/img/logo.png" alt="" />
           <div><b>StockWise</b><small>Stock smart, waste less</small></div>
         </a>
         <nav>
@@ -145,7 +145,7 @@ function renderShell() {
       <div class="main">
         <header class="topbar" id="topbar">
           <button class="icon-btn plain back" id="back-btn" aria-label="Kembali">${icon('chevronLeft')}</button>
-          <img class="mobile-logo" id="mobile-logo" src="/img/logo.svg" alt="" />
+          <img class="mobile-logo" id="mobile-logo" src="/img/logo.png" alt="" />
           <h1 id="page-title"></h1>
           <div id="topbar-actions" class="row"></div>
         </header>

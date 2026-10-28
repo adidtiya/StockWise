@@ -16,7 +16,7 @@ export const login = {
       <div class="screen">
         <div class="screen-inner">
           <div class="auth-head">
-            <img src="/img/logo.svg" alt="StockWise" />
+            <img src="/img/logo.png" alt="StockWise" />
             <h1>Masuk ke StockWise</h1>
             <p class="muted">Know what and how much to stock before it becomes waste.</p>
           </div>
@@ -147,7 +147,7 @@ export const register = {
           <div class="screen-inner">
             <div class="row-between" style="margin-bottom:14px">
               <button class="icon-btn plain" id="back" aria-label="Kembali">${icon('chevronLeft')}</button>
-              <img src="/img/logo.svg" width="32" height="32" alt="" />
+              <img src="/img/logo.png" width="32" height="32" alt="" />
               <span style="width:38px"></span>
             </div>
             <div class="steps">${[0, 1, 2].map((k) => html`<i class="${k <= step ? 'on' : ''}"></i>`)}</div>

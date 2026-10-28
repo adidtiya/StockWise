@@ -81,7 +81,7 @@ server/
   seed.js          Event default & data contoh 90 hari, akun demo
   routes/          auth.js, data.js (bahan, menu, stok, penjualan, import, event, riwayat), account.js (forecast, langganan, API, feedback)
 public/
-  index.html, css/style.css, img/logo.svg, manifest.webmanifest
+  index.html, css/style.css, img/logo.png, manifest.webmanifest
   js/app.js        Router & layout (sidebar desktop, bottom nav ponsel)
   js/ui.js         Komponen UI, format, grafik SVG
   js/pages/        Satu file per halaman

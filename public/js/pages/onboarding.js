@@ -76,7 +76,7 @@ export default {
       <div class="screen">
         <div class="screen-inner">
           <div class="onb-top">
-            <div class="row"><img src="/img/logo.svg" width="34" height="34" alt="" /><b style="font-size:18px">StockWise</b></div>
+            <div class="row"><img src="/img/logo.png" width="34" height="34" alt="" /><b style="font-size:18px">StockWise</b></div>
             <button class="btn btn-ghost btn-sm" id="skip">Lewati</button>
           </div>
           <div class="onb-slides">
