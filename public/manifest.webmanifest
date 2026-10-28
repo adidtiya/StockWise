@@ -1,0 +1,10 @@
+{
+  "name": "StockWise",
+  "short_name": "StockWise",
+  "description": "Prediksi stok dan Waste Risk Score untuk UMKM F&B",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F5F8F7",
+  "theme_color": "#0F766E",
+  "icons": [{ "src": "/img/logo.svg", "sizes": "any", "type": "image/svg+xml" }]
+}
