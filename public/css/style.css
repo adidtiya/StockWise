@@ -265,6 +265,7 @@ table.table { width: 100%; border-collapse: collapse; font-size: 14px; }
   border-radius: 14px; cursor: pointer; background: var(--surface); transition: border 0.15s, background 0.15s;
 }
 .choice input { position: absolute; opacity: 0; pointer-events: none; }
+.choice > svg { width: 20px; height: 20px; flex: none; color: var(--faint); }
 .choice:hover { border-color: var(--brand-600); }
 .choice.selected, .choice:has(input:checked) { border-color: var(--brand); background: var(--brand-50); box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12); }
 .choice .ico { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: var(--surface-2); color: var(--brand); }
