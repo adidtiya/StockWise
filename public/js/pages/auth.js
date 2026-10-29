@@ -30,6 +30,8 @@ export const login = {
             <div class="form-error" id="err"></div>
             <button class="btn btn-lg btn-block" type="submit">Masuk</button>
           </form>
+          <div class="or" style="margin:20px 0 14px">atau coba akun demo</div>
+          <div class="stack-sm" id="demos"></div>
           <div style="flex:1"></div>
           <p class="center small" style="margin-top:22px">Belum punya akun? <a href="#/register"><b>Daftar gratis</b></a></p>
         </div>
@@ -62,6 +64,26 @@ export const login = {
       if (!d.email || !d.password) return (err.textContent = 'Email dan kata sandi wajib diisi.');
       doLogin(d.email, d.password, form.querySelector('[type=submit]'));
     };
+
+    try {
+      const demos = await api('/auth/demo-accounts');
+      root.querySelector('#demos').innerHTML = html`${demos.map(
+        (d) => html`<button class="choice" data-email="${d.email}" data-pass="${d.password}" style="flex-direction:row;align-items:center;text-align:left">
+          <div class="ico">${icon(d.role === 'pro' ? 'crown' : 'store')}</div>
+          <div class="grow"><b>${d.business_name}</b><br /><span>${d.role === 'pro' ? 'Pemilik UMKM Pro · katering' : 'Pemilik UMKM Freemium · warung'}</span></div>
+          ${icon('chevronRight')}
+        </button>`
+      )}`;
+      root.querySelectorAll('#demos [data-email]').forEach((b) => {
+        b.onclick = () => {
+          form.email.value = b.dataset.email;
+          form.password.value = b.dataset.pass;
+          doLogin(b.dataset.email, b.dataset.pass, b);
+        };
+      });
+    } catch {
+      /* daftar demo opsional */
+    }
   },
 };
 

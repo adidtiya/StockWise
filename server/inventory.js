@@ -80,15 +80,16 @@ export class Inventory {
 }
 
 export function loadIngredients(userId) {
-  return db.all('SELECT * FROM ingredients WHERE user_id = ? ORDER BY name', userId);
+  return db.prepare('SELECT * FROM ingredients WHERE user_id = ? ORDER BY name').all(userId);
 }
 
-export async function loadRecipes(userId) {
-  const rows = await db.all(
-    `SELECT r.product_id, r.ingredient_id, r.qty FROM recipes r
-     JOIN products p ON p.id = r.product_id WHERE p.user_id = ?`,
-    userId
-  );
+export function loadRecipes(userId) {
+  const rows = db
+    .prepare(
+      `SELECT r.product_id, r.ingredient_id, r.qty FROM recipes r
+       JOIN products p ON p.id = r.product_id WHERE p.user_id = ?`
+    )
+    .all(userId);
   const map = new Map();
   for (const r of rows) {
     if (!map.has(r.product_id)) map.set(r.product_id, []);
@@ -99,15 +100,17 @@ export async function loadRecipes(userId) {
 
 // Membangun ulang kondisi stok dengan memutar ulang seluruh transaksi
 // (stok masuk, penjualan x resep, bahan terbuang) secara kronologis sampai `until`.
-export async function replay(userId, until = today()) {
-  const [ingredients, recipes, batches, sales, wastes] = await Promise.all([
-    loadIngredients(userId),
-    loadRecipes(userId),
-    db.all('SELECT * FROM batches WHERE user_id = ? AND received_date <= ? ORDER BY received_date, id', userId, until),
-    db.all('SELECT product_id, date, SUM(qty) AS qty FROM sales WHERE user_id = ? AND date <= ? GROUP BY product_id, date', userId, until),
-    db.all('SELECT * FROM waste_logs WHERE user_id = ? AND date <= ? ORDER BY date, id', userId, until),
-  ]);
+export function replay(userId, until = today()) {
+  const ingredients = loadIngredients(userId);
+  const recipes = loadRecipes(userId);
   const inv = new Inventory(ingredients);
+  const batches = db
+    .prepare('SELECT * FROM batches WHERE user_id = ? AND received_date <= ? ORDER BY received_date, id')
+    .all(userId, until);
+  const sales = db
+    .prepare('SELECT product_id, date, SUM(qty) AS qty FROM sales WHERE user_id = ? AND date <= ? GROUP BY product_id, date')
+    .all(userId, until);
+  const wastes = db.prepare('SELECT * FROM waste_logs WHERE user_id = ? AND date <= ? ORDER BY date, id').all(userId, until);
 
   const first = [batches[0]?.received_date, sales.reduce((m, s) => (!m || s.date < m ? s.date : m), null), wastes[0]?.date]
     .filter(Boolean)

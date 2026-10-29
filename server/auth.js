@@ -1,18 +1,16 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { db } from './db.js';
+import { db, DATA_DIR } from './db.js';
 import { HttpError, today } from './util.js';
 
 const COOKIE = 'sw_session';
 const MAX_AGE_DAYS = 7;
 
-// Secret penandatangan sesi: dari env (wajib di server publik), atau dibuat sekali lalu disimpan di folder data lokal.
+// Secret penandatangan sesi: dari env, atau dibuat sekali lalu disimpan di folder data.
 function loadSecret() {
   if (process.env.SESSION_SECRET) return process.env.SESSION_SECRET;
-  const dir = path.join(import.meta.dirname, '..', 'data');
-  fs.mkdirSync(dir, { recursive: true });
-  const file = path.join(dir, '.session-secret');
+  const file = path.join(DATA_DIR, '.session-secret');
   if (!fs.existsSync(file)) fs.writeFileSync(file, crypto.randomBytes(32).toString('hex'));
   return fs.readFileSync(file, 'utf8').trim();
 }
@@ -76,19 +74,19 @@ export function clearSession(res) {
 }
 
 // Paket Pro yang masa aktifnya habis otomatis kembali ke Freemium.
-async function expireProIfNeeded(user) {
+function expireProIfNeeded(user) {
   if (user.role === 'pro' && user.pro_until && user.pro_until < today()) {
-    await db.run("UPDATE users SET role = 'freemium' WHERE id = ?", user.id);
+    db.prepare("UPDATE users SET role = 'freemium' WHERE id = ?").run(user.id);
     user.role = 'freemium';
   }
   return user;
 }
 
-export async function requireAuth(req, res, next) {
+export function requireAuth(req, res, next) {
   const payload = unsign(readCookie(req, COOKIE));
-  const user = payload && (await db.get('SELECT * FROM users WHERE id = ?', payload.uid));
+  const user = payload && db.prepare('SELECT * FROM users WHERE id = ?').get(payload.uid);
   if (!user) throw new HttpError(401, 'Sesi berakhir, silakan masuk kembali.');
-  req.user = await expireProIfNeeded(user);
+  req.user = expireProIfNeeded(user);
   next();
 }
 
