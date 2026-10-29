@@ -7,7 +7,11 @@ memberi rekomendasi belanja, dan menampilkan **Waste Risk Score** sebelum bahan 
 
 ## Menjalankan di komputer sendiri
 
-Prasyarat: **Node.js 22.13 atau lebih baru** (database memakai modul bawaan `node:sqlite`, jadi tidak perlu install database terpisah).
+Prasyarat: **Node.js 22.13 atau lebih baru** dan database **PostgreSQL** (gratis di [Neon](https://neon.tech)).
+
+1. Buat project di Neon, lalu salin *connection string*-nya (Dashboard → Connect).
+2. Salin `.env.example` menjadi `.env`, lalu isi `DATABASE_URL` dengan connection string tersebut. File `.env` tidak ikut ke GitHub.
+3. Jalankan:
 
 ```bash
 npm install
@@ -17,7 +21,7 @@ npm install
 npm start
 ```
 
-Buka http://localhost:3000. Database `data/stockwise.db` dibuat otomatis saat server pertama kali jalan.
+Buka http://localhost:3000. Tabel database dibuat otomatis saat server pertama kali jalan.
 
 ### Akun demo (dibuat otomatis, berisi riwayat 90 hari)
 
@@ -26,8 +30,8 @@ Buka http://localhost:3000. Database `data/stockwise.db` dibuat otomatis saat se
 | Pemilik UMKM (Freemium) | `demo@stockwise.id` | `demo12345` | Warung Makan Bu Sari |
 | Pemilik UMKM Pro | `pro@stockwise.id` | `demo12345` | Dapur Katering Berkah |
 
-Akun demo juga bisa dipilih langsung dengan satu klik di halaman **Masuk**. Datanya otomatis dibuat ulang bila sudah basi
-(tidak ada penjualan kemarin) atau bila akun demo dihapus.
+Akun demo tidak ditampilkan di halaman **Masuk**; login manual dengan email dan kata sandi di atas. Datanya otomatis
+dibuat ulang bila sudah basi (tidak ada penjualan kemarin) atau bila akun demo dihapus.
 
 
 ### Yang masih berupa simulasi (sebutkan di makalah)
@@ -54,7 +58,7 @@ Model dilatih ulang otomatis setiap 24 jam atau lewat tombol di halaman Evaluasi
 |---|---|---|
 | Back-end | Node.js 22+ dengan Express 5 | Satu bahasa (JavaScript) untuk front-end dan back-end sehingga tim kecil cepat bergerak; Express ringan dan mudah di-deploy di layanan gratis/murah. |
 | Front-end | HTML, CSS, JavaScript (ES Modules), SPA tanpa framework, grafik SVG buatan sendiri, PWA manifest | Tanpa proses build, ukuran kecil, cepat di ponsel kelas menengah yang dipakai pemilik UMKM; tampilan mobile-first dengan navigasi bawah. |
-| Database | SQLite (`node:sqlite` bawaan Node) | Tanpa server database terpisah, cukup satu file; relasi & `ON DELETE CASCADE` untuk hapus akun. Saat pengguna bertambah dapat dimigrasi ke PostgreSQL karena skemanya relasional standar. |
+| Database | PostgreSQL (hosting Neon, driver `pg`) | Data StockWise saling berelasi (akun → bahan → resep → stok → penjualan), sehingga cocok dengan database relasional; foreign key `ON DELETE CASCADE` menghapus seluruh data saat akun dihapus. Neon gratis permanen dan terpisah dari server aplikasi, jadi data tidak hilang saat server restart. |
 | 3rd party services | SheetJS (baca/tulis Excel di browser), Google Fonts (Plus Jakarta Sans); rencana produksi: Midtrans/Xendit (pembayaran), API MokaPOS, GoBiz, GrabMerchant, Shopee Partner | Import Excel tanpa membebani server; integrasi kanal penjualan sebagai pembeda paket Pro. |
 | Other tools | Git & GitHub, VS Code, Render (hosting), Figma (desain), Claude Code (bantuan pengembangan) | |
 
@@ -63,17 +67,22 @@ semua query memakai prepared statement, dan setiap data dicek kepemilikannya per
 
 
 
-Catatan paket gratis Render: server tidur setelah ±15 menit tanpa pengunjung (akses pertama butuh ±30–60 detik) dan
-disk tidak permanen, sehingga akun baru yang didaftarkan bisa hilang saat server restart. **Akun demo selalu dibuat
-ulang otomatis**, jadi aman untuk presentasi. Untuk data permanen gunakan paket berbayar dengan persistent disk
-(set `DATA_DIR` ke lokasi disk) atau Railway dengan volume.
+## Deploy (Render + Neon)
+
+1. Push repository ini ke GitHub.
+2. Di https://render.com → **New → Blueprint**, pilih repository. `render.yaml` sudah mengatur build, start, Node 22,
+   dan `SESSION_SECRET` acak.
+3. Saat diminta, isi environment variable `DATABASE_URL` dengan connection string Neon.
+
+Data tersimpan di Neon, jadi akun dan transaksi tetap ada walaupun server Render restart. Paket gratis Render tidur
+setelah ±15 menit tanpa pengunjung, sehingga akses pertama butuh ±30–60 detik.
 
 ## Struktur folder
 
 ```
 server/
   server.js        Express app, routing, static files
-  db.js            Skema SQLite
+  db.js            Koneksi & skema PostgreSQL
   auth.js          Hash kata sandi, sesi cookie, middleware
   forecast.js      UC-08 model forecast & latih ulang
   inventory.js     Stok per batch (FEFO), kedaluwarsa, waste

@@ -2,7 +2,7 @@
 // Model time-series per menu: level (exponential smoothing) x faktor hari dalam minggu
 // x faktor event. Faktor event dipelajari dari riwayat penjualan pada hari berlabel
 // yang sama (mis. "Tanggal Gajian"); bila belum ada riwayat dipakai dampak default event.
-import { db } from './db.js';
+import { db, NOW } from './db.js';
 import { addDays, clamp, dateRange, dow, mean, today } from './util.js';
 
 export const ALPHAS = [0.05, 0.1, 0.2, 0.3, 0.5];
@@ -11,21 +11,20 @@ const HISTORY_DAYS = 120;
 const DOW_WINDOW = 56;
 const EVAL_DAYS = 28;
 
-export function loadSalesContext(userId) {
+export async function loadSalesContext(userId) {
   const T = today();
-  const products = db
-    .prepare('SELECT id, name, price FROM products WHERE user_id = ? AND active = 1 ORDER BY name')
-    .all(userId);
-  const rows = db
-    .prepare(
+  const [products, rows, todayRows, events] = await Promise.all([
+    db.all('SELECT id, name, price FROM products WHERE user_id = ? AND active = 1 ORDER BY name', userId),
+    db.all(
       `SELECT product_id, date, SUM(qty) AS q FROM sales
-       WHERE user_id = ? AND date >= ? AND date < ? GROUP BY product_id, date`
-    )
-    .all(userId, addDays(T, -HISTORY_DAYS), T);
-  const todayRows = db
-    .prepare('SELECT product_id, SUM(qty) AS q FROM sales WHERE user_id = ? AND date = ? GROUP BY product_id')
-    .all(userId, T);
-  const events = db.prepare('SELECT id, name, date, impact, category FROM events WHERE user_id = ?').all(userId);
+       WHERE user_id = ? AND date >= ? AND date < ? GROUP BY product_id, date`,
+      userId,
+      addDays(T, -HISTORY_DAYS),
+      T
+    ),
+    db.all('SELECT product_id, SUM(qty) AS q FROM sales WHERE user_id = ? AND date = ? GROUP BY product_id', userId, T),
+    db.all('SELECT id, name, date, impact, category FROM events WHERE user_id = ?', userId),
+  ]);
 
   const eventsByDate = new Map();
   for (const e of events) {
@@ -164,31 +163,35 @@ export function wape(model, days = 14) {
 }
 
 // Tahap 7: latih ulang. Pilih alpha dengan error terkecil pada 28 hari terakhir.
-export function train(userId) {
-  const ctx = loadSalesContext(userId);
+export async function train(userId, ctx) {
+  ctx ??= await loadSalesContext(userId);
   let best = { alpha: DEFAULT_ALPHA, wape: null };
   for (const alpha of ALPHAS) {
     const w = wape(fitModel(ctx, alpha), EVAL_DAYS);
     if (w != null && (best.wape == null || w < best.wape)) best = { alpha, wape: w };
   }
   const samples = ctx.dates.length * ctx.products.length;
-  db.prepare(
-    `INSERT INTO model_state (user_id, alpha, wape, samples, trained_at) VALUES (?, ?, ?, ?, datetime('now'))
+  await db.run(
+    `INSERT INTO model_state (user_id, alpha, wape, samples, trained_at) VALUES (?, ?, ?, ?, ${NOW})
      ON CONFLICT(user_id) DO UPDATE SET alpha = excluded.alpha, wape = excluded.wape,
-       samples = excluded.samples, trained_at = excluded.trained_at`
-  ).run(userId, best.alpha, best.wape, samples);
+       samples = excluded.samples, trained_at = excluded.trained_at`,
+    userId,
+    best.alpha,
+    best.wape,
+    samples
+  );
   return { ...best, samples };
 }
 
-export function getModel(userId) {
-  let state = db.prepare('SELECT * FROM model_state WHERE user_id = ?').get(userId);
+export async function getModel(userId) {
+  const [stateNow, ctx] = await Promise.all([db.get('SELECT * FROM model_state WHERE user_id = ?', userId), loadSalesContext(userId)]);
+  let state = stateNow;
   // Latih ulang otomatis bila belum pernah, belum punya data, atau sudah lebih dari sehari.
   const stale = state && (state.samples === 0 || Date.now() - Date.parse(state.trained_at.replace(' ', 'T') + 'Z') > 86400000);
   if (!state || stale) {
-    train(userId);
-    state = db.prepare('SELECT * FROM model_state WHERE user_id = ?').get(userId);
+    await train(userId, ctx);
+    state = await db.get('SELECT * FROM model_state WHERE user_id = ?', userId);
   }
-  const ctx = loadSalesContext(userId);
   return { ctx, model: fitModel(ctx, state.alpha), state };
 }
 

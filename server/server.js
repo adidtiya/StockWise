@@ -1,6 +1,6 @@
 import express from 'express';
 import path from 'node:path';
-import './db.js';
+import { initDb, pool } from './db.js';
 import { requireAuth } from './auth.js';
 import authRoutes from './routes/auth.js';
 import dataRoutes from './routes/data.js';
@@ -15,10 +15,12 @@ const PUBLIC_DIR = path.join(import.meta.dirname, '..', 'public');
 app.disable('x-powered-by');
 app.use(express.json({ limit: '5mb' }));
 
-app.get('/api/health', (req, res) => res.json({ ok: true }));
+app.get('/api/health', async (req, res) => {
+  await pool.query('SELECT 1');
+  res.json({ ok: true });
+});
 app.use('/api/auth', authRoutes);
-app.use('/api', requireAuth, dataRoutes);
-app.use('/api', requireAuth, accountRoutes);
+app.use('/api', requireAuth, dataRoutes, accountRoutes);
 app.use('/api', (req, res) => res.status(404).json({ error: 'Endpoint tidak ditemukan.' }));
 
 app.use(express.static(PUBLIC_DIR, { extensions: ['html'] }));
@@ -36,7 +38,8 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Terjadi kesalahan pada server.' });
 });
 
-for (const acc of DEMO_ACCOUNTS) ensureDemoAccount(acc.email);
+await initDb();
+for (const acc of DEMO_ACCOUNTS) await ensureDemoAccount(acc.email);
 
 app.listen(PORT, () => {
   console.log(`StockWise berjalan di http://localhost:${PORT}`);

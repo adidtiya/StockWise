@@ -74,13 +74,11 @@ const fmtShort = (d) =>
   );
 
 // UC-06 Rekomendasi pembelian + UC-07 Waste Risk Score.
-export function recommendations(userId, cached) {
-  const { ctx, model } = cached || getModel(userId);
+export async function recommendations(userId, cached) {
+  const { ctx, model } = cached || (await getModel(userId));
   const T = ctx.T;
   const start = addDays(T, 1);
-  const ingredients = loadIngredients(userId);
-  const recipes = loadRecipes(userId);
-  const inv = replay(userId, T);
+  const [ingredients, recipes, inv] = await Promise.all([loadIngredients(userId), loadRecipes(userId), replay(userId, T)]);
   const { usage, future } = dailyUsage(model, ctx, recipes, ingredients);
 
   const items = ingredients.map((ing) => {
@@ -188,43 +186,36 @@ function portionsLeft(inv, recipes, products, T) {
   });
 }
 
-export function quotaUsage(userId, T) {
+export async function quotaUsage(userId, T) {
   const month = T.slice(0, 7);
-  return db
-    .prepare(
-      `SELECT COUNT(*) AS n FROM sales WHERE user_id = ? AND substr(date, 1, 7) = ? AND source IN ('manual', 'excel')`
-    )
-    .get(userId, month).n;
+  const r = await db.get(
+    `SELECT COUNT(*) AS n FROM sales WHERE user_id = ? AND substr(date, 1, 7) = ? AND source IN ('manual', 'excel')`,
+    userId,
+    month
+  );
+  return r.n;
 }
 
 // UC-09 Dashboard inventory.
-export function dashboard(user) {
-  const cached = getModel(user.id);
+export async function dashboard(user) {
+  const cached = await getModel(user.id);
   const { ctx, model } = cached;
   const T = ctx.T;
-  const rec = recommendations(user.id, cached);
-  const inv = rec.inv;
-  const ingredients = loadIngredients(user.id);
-  const ingName = new Map(ingredients.map((i) => [i.id, i]));
-  const recipes = loadRecipes(user.id);
-
-  const todaySales = db
-    .prepare(
-      `SELECT COALESCE(SUM(s.qty), 0) AS qty, COALESCE(SUM(s.qty * p.price), 0) AS revenue
-       FROM sales s JOIN products p ON p.id = s.product_id WHERE s.user_id = ? AND s.date = ?`
-    )
-    .get(user.id, T);
-  const yesterday = db
-    .prepare(
-      `SELECT COALESCE(SUM(s.qty), 0) AS qty, COALESCE(SUM(s.qty * p.price), 0) AS revenue
-       FROM sales s JOIN products p ON p.id = s.product_id WHERE s.user_id = ? AND s.date = ?`
-    )
-    .get(user.id, addDays(T, -1));
-
   const pastDates = dateRange(addDays(T, -13), T);
-  const pastRows = db
-    .prepare('SELECT date, SUM(qty) AS q FROM sales WHERE user_id = ? AND date >= ? GROUP BY date')
-    .all(user.id, pastDates[0]);
+  const SALES_DAY = `SELECT COALESCE(SUM(s.qty), 0) AS qty, COALESCE(SUM(s.qty * p.price), 0) AS revenue
+       FROM sales s JOIN products p ON p.id = s.product_id WHERE s.user_id = ? AND s.date = ?`;
+  const [rec, ingredients, recipes, todaySales, yesterday, pastRows, upcomingRows, quota] = await Promise.all([
+    recommendations(user.id, cached),
+    loadIngredients(user.id),
+    loadRecipes(user.id),
+    db.get(SALES_DAY, user.id, T),
+    db.get(SALES_DAY, user.id, addDays(T, -1)),
+    db.all('SELECT date, SUM(qty) AS q FROM sales WHERE user_id = ? AND date >= ? GROUP BY date', user.id, pastDates[0]),
+    db.all('SELECT * FROM events WHERE user_id = ? AND date >= ? AND date <= ? ORDER BY date LIMIT 5', user.id, T, addDays(T, 45)),
+    user.role === 'freemium' ? quotaUsage(user.id, T) : null,
+  ]);
+  const inv = rec.inv;
+  const ingName = new Map(ingredients.map((i) => [i.id, i]));
   const pastMap = new Map(pastRows.map((r) => [r.date, r.q]));
   const futureDates = dateRange(addDays(T, 1), addDays(T, 7));
   const forecastTotals = futureDates.map((d) => {
@@ -237,10 +228,7 @@ export function dashboard(user) {
   const wasteNow = sum(wasteBetween(inv, addDays(T, -29), T).map((w) => w.value));
   const wastePrev = sum(wasteBetween(inv, addDays(T, -59), addDays(T, -30)).map((w) => w.value));
 
-  const upcoming = db
-    .prepare('SELECT * FROM events WHERE user_id = ? AND date >= ? AND date <= ? ORDER BY date LIMIT 5')
-    .all(user.id, T, addDays(T, 45))
-    .map((e) => ({ ...e, multiplier: round(eventMultiplier(model, e), 2) }));
+  const upcoming = upcomingRows.map((e) => ({ ...e, multiplier: round(eventMultiplier(model, e), 2) }));
 
   const acc = wape(model, 14);
   return {
@@ -270,7 +258,7 @@ export function dashboard(user) {
     accuracy: acc == null ? null : round(Math.max(0, 1 - acc), 3),
     waste: { last30: Math.round(wasteNow), prev30: Math.round(wastePrev) },
     events: upcoming,
-    quota: user.role === 'freemium' ? { used: quotaUsage(user.id, T), limit: FREE_QUOTA } : null,
+    quota: user.role === 'freemium' ? { used: quota, limit: FREE_QUOTA } : null,
     counts: {
       products: ctx.products.length,
       ingredients: ingredients.length,
@@ -280,8 +268,8 @@ export function dashboard(user) {
 }
 
 // UC-05 Lihat forecast kebutuhan.
-export function forecastView(userId, days) {
-  const cached = getModel(userId);
+export async function forecastView(userId, days) {
+  const cached = await getModel(userId);
   const { ctx, model } = cached;
   const T = ctx.T;
   const dates = dateRange(addDays(T, 1), addDays(T, days));
@@ -306,8 +294,7 @@ export function forecastView(userId, days) {
       dow_factors: m.f.map((x) => round(x, 2)),
     };
   });
-  const recipes = loadRecipes(userId);
-  const ingredients = loadIngredients(userId);
+  const [recipes, ingredients] = await Promise.all([loadRecipes(userId), loadIngredients(userId)]);
   const needs = ingredientNeeds(model, recipes, dates);
   const tomorrow = ingredientNeeds(model, recipes, [dates[0]]);
   const events = dates
@@ -349,8 +336,8 @@ function meanFactor(model, w) {
 }
 
 // Tahap 7: Evaluasi akurasi forecast & tren bahan terbuang.
-export function evaluation(userId) {
-  const { ctx, model, state } = getModel(userId);
+export async function evaluation(userId) {
+  const { ctx, model, state } = await getModel(userId);
   const T = ctx.T;
   const n = model.dates.length;
   const from = Math.max(0, n - 28);
@@ -374,8 +361,8 @@ export function evaluation(userId) {
     return { id: p.id, name: p.name, actual: a, forecast: Math.round(f), accuracy: a > 0 ? round(Math.max(0, 1 - e / a), 3) : null, bias: a > 0 ? round((f - a) / a, 3) : null };
   });
 
-  const inv = replay(userId, T);
-  const ingredients = new Map(loadIngredients(userId).map((i) => [i.id, i]));
+  const [inv, ingList] = await Promise.all([replay(userId, T), loadIngredients(userId)]);
+  const ingredients = new Map(ingList.map((i) => [i.id, i]));
   const weeks = [];
   for (let k = 11; k >= 0; k--) {
     const end = addDays(T, -7 * k);

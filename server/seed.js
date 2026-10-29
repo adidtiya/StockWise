@@ -1,5 +1,5 @@
 // Event default dan data contoh (riwayat 90 hari) supaya forecast bisa langsung dicoba.
-import { db } from './db.js';
+import { db, tx } from './db.js';
 import { Inventory, expiryFor } from './inventory.js';
 import { addDays, dateRange, dow, today, unitStep, roundTo, sum } from './util.js';
 import { hashPassword } from './auth.js';
@@ -27,11 +27,12 @@ const MOVING_HOLIDAYS = [
   ['2027-05-16', 'Idul Adha', 1.2],
 ];
 
-export function seedEvents(userId, businessType) {
+export async function seedEvents(userId, businessType) {
   const T = today();
   const from = addDays(T, -400);
   const to = addDays(T, 400);
-  const ins = db.prepare('INSERT INTO events (user_id, name, date, impact, category) VALUES (?, ?, ?, ?, ?)');
+  const rows = [];
+  const ins = { run: (...r) => rows.push(r) };
   const years = [...new Set([from, T, to].map((d) => +d.slice(0, 4)))];
   for (let y = years[0]; y <= years.at(-1); y++) {
     for (const [md, name, impact] of FIXED_HOLIDAYS) {
@@ -50,6 +51,7 @@ export function seedEvents(userId, businessType) {
     const adj = name === 'Lebaran' && businessType === 'katering' ? 1.6 : impact;
     if (d >= from && d <= to) ins.run(userId, name, d, adj, 'nasional');
   }
+  await db.insertMany('events', ['user_id', 'name', 'date', 'impact', 'category'], rows);
 }
 
 const TEMPLATES = {
@@ -123,7 +125,7 @@ function mulberry32(a) {
   };
 }
 
-export function seedDemoData(userId, businessType, { pro = false } = {}) {
+export async function seedDemoData(userId, businessType, { pro = false } = {}) {
   const tpl = TEMPLATES[businessType] || TEMPLATES.warung;
   const rnd = mulberry32(userId * 9973 + 7);
   const normal = () => Math.sqrt(-2 * Math.log(rnd() || 1e-9)) * Math.cos(2 * Math.PI * rnd());
@@ -131,27 +133,29 @@ export function seedDemoData(userId, businessType, { pro = false } = {}) {
   const start = addDays(T, -90);
   const manualUntil = addDays(T, -31); // 60 hari pertama: belanja berdasarkan perkiraan pemilik
 
-  const insIng = db.prepare(
-    'INSERT INTO ingredients (user_id, name, unit, category, shelf_life_days, min_stock, price) VALUES (?, ?, ?, ?, ?, ?, ?)'
-  );
-  const ingredients = tpl.ingredients.map(([name, unit, category, shelf, minStock, price]) => {
-    const id = Number(insIng.run(userId, name, unit, category, shelf, minStock, price).lastInsertRowid);
-    return { id, name, unit, category, shelf_life_days: shelf, min_stock: minStock, price };
-  });
+  const ingredients = [];
+  for (const [name, unit, category, shelf, minStock, price] of tpl.ingredients) {
+    const id = await db.insert(
+      'INSERT INTO ingredients (user_id, name, unit, category, shelf_life_days, min_stock, price) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      userId, name, unit, category, shelf, minStock, price
+    );
+    ingredients.push({ id, name, unit, category, shelf_life_days: shelf, min_stock: minStock, price });
+  }
   const ingByName = new Map(ingredients.map((i) => [i.name, i]));
 
-  const insProd = db.prepare('INSERT INTO products (user_id, name, price) VALUES (?, ?, ?)');
-  const insRec = db.prepare('INSERT INTO recipes (product_id, ingredient_id, qty) VALUES (?, ?, ?)');
-  const products = tpl.products.map(([name, price, base, recipe]) => {
-    const id = Number(insProd.run(userId, name, price).lastInsertRowid);
+  const products = [];
+  const recipeRows = [];
+  for (const [name, price, base, recipe] of tpl.products) {
+    const id = await db.insert('INSERT INTO products (user_id, name, price) VALUES (?, ?, ?)', userId, name, price);
     const rec = Object.entries(recipe).map(([ing, qty]) => ({ ingredient_id: ingByName.get(ing).id, qty }));
-    for (const r of rec) insRec.run(id, r.ingredient_id, r.qty);
-    return { id, name, base, rec };
-  });
+    for (const r of rec) recipeRows.push([id, r.ingredient_id, r.qty]);
+    products.push({ id, name, base, rec });
+  }
+  await db.insertMany('recipes', ['product_id', 'ingredient_id', 'qty'], recipeRows);
 
   // Pengaruh event yang "sebenarnya" pada data contoh (gajian sedikit lebih kuat dari default,
   // sehingga terlihat model belajar dari data).
-  const events = db.prepare('SELECT name, date, impact FROM events WHERE user_id = ? AND date >= ? AND date <= ?').all(userId, start, addDays(T, 30));
+  const events = await db.all('SELECT name, date, impact FROM events WHERE user_id = ? AND date >= ? AND date <= ?', userId, start, addDays(T, 30));
   const eventMult = new Map();
   for (const e of events) {
     const truth = e.name === 'Tanggal Gajian' ? 1.3 : e.impact;
@@ -171,23 +175,25 @@ export function seedDemoData(userId, businessType, { pro = false } = {}) {
   const avgUsage = new Map(ingredients.map((i) => [i.id, sum(dateRange(start, addDays(start, 27)).map((d) => usageOf(i.id, d))) / 28]));
 
   const inv = new Inventory(ingredients);
-  const insBatch = db.prepare(
-    'INSERT INTO batches (user_id, ingredient_id, qty, unit_price, received_date, expiry_date, source, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-  );
+  // Baris dikumpulkan dulu lalu disimpan sekaligus di akhir (bulk insert).
+  const batchRows = [];
+  const salesRows = [];
+  const wasteRows = [];
+  const insBatch = { run: (...r) => batchRows.push(r) };
   const addBatch = (ing, qty, d, source = 'pembelian') => {
     const step = unitStep(ing.unit);
     qty = Math.max(step, roundTo(qty, step));
     const price = Math.round(ing.price * (0.95 + rnd() * 0.1));
     const expiry = expiryFor(d, ing.shelf_life_days);
-    const id = Number(insBatch.run(userId, ing.id, qty, price, d, expiry, source, `${d} 06:00:00`).lastInsertRowid);
-    inv.addBatch({ id, ingredient_id: ing.id, qty, unit_price: price, received_date: d, expiry_date: expiry });
+    insBatch.run(userId, ing.id, qty, price, d, expiry, source, `${d} 06:00:00`);
+    inv.addBatch({ id: null, ingredient_id: ing.id, qty, unit_price: price, received_date: d, expiry_date: expiry });
   };
 
   // Stok awal bahan tahan lama
   for (const ing of ingredients) if (ing.category === 'tahan_lama') addBatch(ing, avgUsage.get(ing.id) * 10, start, 'awal');
 
-  const insSale = db.prepare('INSERT INTO sales (user_id, product_id, qty, date, source, created_at) VALUES (?, ?, ?, ?, ?, ?)');
-  const insWaste = db.prepare('INSERT INTO waste_logs (user_id, ingredient_id, qty, date, reason) VALUES (?, ?, ?, ?, ?)');
+  const insSale = { run: (...r) => salesRows.push(r) };
+  const insWaste = { run: (...r) => wasteRows.push(r) };
   const sources = pro ? [['mokapos', 0.55], ['gofood', 0.25], ['grabfood', 0.2]] : null;
 
   for (const d of dateRange(start, T)) {
@@ -235,11 +241,17 @@ export function seedDemoData(userId, businessType, { pro = false } = {}) {
     }
   }
 
+  await db.insertMany('batches', ['user_id', 'ingredient_id', 'qty', 'unit_price', 'received_date', 'expiry_date', 'source', 'created_at'], batchRows);
+  await db.insertMany('sales', ['user_id', 'product_id', 'qty', 'date', 'source', 'created_at'], salesRows);
+  await db.insertMany('waste_logs', ['user_id', 'ingredient_id', 'qty', 'date', 'reason'], wasteRows);
   if (pro) {
-    const ins = db.prepare('INSERT INTO integrations (user_id, provider, connected_at, last_sync) VALUES (?, ?, ?, ?)');
-    for (const prov of ['mokapos', 'gofood', 'grabfood']) ins.run(userId, prov, `${start} 08:00:00`, `${T} 08:00:00`);
+    await db.insertMany(
+      'integrations',
+      ['user_id', 'provider', 'connected_at', 'last_sync'],
+      ['mokapos', 'gofood', 'grabfood'].map((prov) => [userId, prov, `${start} 08:00:00`, `${T} 08:00:00`])
+    );
   }
-  train(userId);
+  await train(userId);
 }
 
 export const DEMO_ACCOUNTS = [
@@ -265,43 +277,38 @@ export const DEMO_ACCOUNTS = [
   },
 ];
 
-export function createUser({ name, email, password, business_name, business_type, city, phone, role = 'freemium', demo = false }) {
+// Dipanggil di dalam tx() oleh pemanggilnya.
+export async function createUser({ name, email, password, business_name, business_type, city, phone, role = 'freemium', demo = false, payment_method = 'qris' }) {
   const T = today();
-  const info = db
-    .prepare(
-      `INSERT INTO users (name, email, password_hash, role, pro_until, business_name, business_type, city, phone)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    )
-    .run(name, email, hashPassword(password), role, role === 'pro' ? addDays(T, 30) : null, business_name, business_type, city || null, phone || null);
-  const userId = Number(info.lastInsertRowid);
-  seedEvents(userId, business_type);
+  const userId = await db.insert(
+    `INSERT INTO users (name, email, password_hash, role, pro_until, business_name, business_type, city, phone)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    name, email, hashPassword(password), role, role === 'pro' ? addDays(T, 30) : null, business_name, business_type, city || null, phone || null
+  );
+  await seedEvents(userId, business_type);
   if (role === 'pro') {
-    db.prepare(
-      "INSERT INTO payments (user_id, plan, amount, method, status, period_start, period_end) VALUES (?, 'pro', 100000, ?, 'paid', ?, ?)"
-    ).run(userId, demo ? 'demo' : 'qris', T, addDays(T, 30));
+    await db.run(
+      "INSERT INTO payments (user_id, plan, amount, method, status, period_start, period_end) VALUES (?, 'pro', 100000, ?, 'paid', ?, ?)",
+      userId, demo ? 'demo' : payment_method, T, addDays(T, 30)
+    );
   }
-  if (demo) seedDemoData(userId, business_type, { pro: role === 'pro' });
+  if (demo) await seedDemoData(userId, business_type, { pro: role === 'pro' });
   return userId;
 }
 
 // Akun demo dibuat ulang bila belum ada atau datanya sudah basi (tidak ada penjualan kemarin).
-export function ensureDemoAccount(email) {
+export async function ensureDemoAccount(email) {
   const acc = DEMO_ACCOUNTS.find((a) => a.email === email.toLowerCase());
   if (!acc) return;
   const T = today();
-  const user = db.prepare('SELECT id FROM users WHERE email = ?').get(acc.email);
-  if (user) {
-    const last = db.prepare('SELECT MAX(date) AS d FROM sales WHERE user_id = ?').get(user.id).d;
-    if (last && last >= addDays(T, -1)) return;
-    db.prepare('DELETE FROM users WHERE id = ?').run(user.id);
-  }
-  db.exec('BEGIN');
-  try {
-    const id = createUser({ ...acc, demo: true });
-    if (acc.role === 'pro') db.prepare('UPDATE users SET pro_until = ? WHERE id = ?').run(addDays(T, 365), id);
-    db.exec('COMMIT');
-  } catch (err) {
-    db.exec('ROLLBACK');
-    throw err;
-  }
+  await tx(async () => {
+    const user = await db.get('SELECT id FROM users WHERE email = ? FOR UPDATE', acc.email);
+    if (user) {
+      const last = (await db.get('SELECT MAX(date) AS d FROM sales WHERE user_id = ?', user.id)).d;
+      if (last && last >= addDays(T, -1)) return;
+      await db.run('DELETE FROM users WHERE id = ?', user.id);
+    }
+    const id = await createUser({ ...acc, demo: true });
+    if (acc.role === 'pro') await db.run('UPDATE users SET pro_until = ? WHERE id = ?', addDays(T, 365), id);
+  });
 }
