@@ -90,7 +90,7 @@ export const login = {
 export const register = {
   title: 'Daftar',
   render(root, ctx) {
-    const data = { business_type: 'warung', plan: 'freemium', seed_demo: true, payment_method: 'qris' };
+    const data = { business_type: 'warung', plan: 'freemium', seed_demo: false, payment_method: 'qris' };
     let step = 0;
 
     const steps = [
