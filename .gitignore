@@ -1,6 +1,37 @@
+# Node.js
 node_modules/
+npm-debug.log
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+env/
+!src/backend/app/config/env/
+!src/backend/app/config/env/**
+dist/
+*.egg-info/
+
+# Environment variables
+.env
+*.env
+.env.*
+!env.example
+!*.env.example
+!development.env.example
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Database & Volumes
 data/
+*.sqlite
 *.db
 *.db-wal
 *.db-shm
+postgres_data_*
+
+# OS
 .DS_Store

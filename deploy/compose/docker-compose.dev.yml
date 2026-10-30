@@ -1,0 +1,55 @@
+networks:
+  backend_net:
+    driver: bridge
+  db_net:
+    driver: bridge
+
+services:
+  db:
+    image: postgres:16
+    container_name: stockwise_db_dev
+    env_file:
+      - ../../src/backend/app/config/env/development.env
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    networks:
+      - db_net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ../../
+      dockerfile: deploy/docker/backend.dev.Dockerfile
+      args:
+        USER_ID: ${UID:-1000}
+        GROUP_ID: ${GID:-1000}
+    container_name: stockwise_backend_dev
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../../src/backend:/app
+    env_file:
+      - ../../src/backend/app/config/env/development.env
+    networks:
+      - backend_net
+      - db_net
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+
+volumes:
+  postgres_data_dev:
+
