@@ -638,7 +638,7 @@ Tujuan: Membangun modul analitik ringkasan operasional harian yang mengagregasik
 ### Fase 7: Fitur Simulasi (Langganan, Integrasi, & Feedback)
 Tujuan: Membangun modul paket Pro, sinkronisasi data pesanan POS/ojol, dan formulir feedback dalam versi simulasi tugas tanpa dependensi pihak ketiga berbayar.
 
-- [ ] **T-7.1 Domain Subscription: Simulasi upgrade paket Pro & status kuota (`subscription/`)**
+- [x] **T-7.1 Domain Subscription: Simulasi upgrade paket Pro & status kuota (`subscription/`)**
   * **Ukuran:** S
   * **Rujukan:** TRD 6.2.13; PRD 4.2 poin 1, PRD UC-11; kode lama `server/routes/account.js`
   * **Dependensi:** T-2.6
@@ -657,7 +657,7 @@ Tujuan: Membangun modul paket Pro, sinkronisasi data pesanan POS/ojol, dan formu
   * **Kriteria Selesai:**
     * Pengguna Freemium mengeksekusi `POST /api/v1/subscription/checkout` berhasil menjadi Pro dan record `users.role` berubah menjadi `'pro'`.
 
-- [ ] **T-7.2 Domain Integration: Simulasi koneksi & mock sync POS/Food Delivery (`integration/`)**
+- [x] **T-7.2 Domain Integration: Simulasi koneksi & mock sync POS/Food Delivery (`integration/`)**
   * **Ukuran:** M
   * **Rujukan:** TRD 6.2.14; PRD 4.2 poin 2, PRD UC-13; kode lama `server/routes/account.js`
   * **Dependensi:** T-4.1, T-7.1
@@ -676,7 +676,7 @@ Tujuan: Membangun modul paket Pro, sinkronisasi data pesanan POS/ojol, dan formu
   * **Kriteria Selesai:**
     * Akun Pro mengeksekusi `POST /api/v1/integrations/mokapos/sync` berhasil menambahkan data penjualan contoh ke tabel `sales` tanpa koneksi internet ke MokaPOS riil.
 
-- [ ] **T-7.3 Domain Feedback: Formulir sederhana penyimpanan pesan umpan balik (`feedback/`)**
+- [x] **T-7.3 Domain Feedback: Formulir sederhana penyimpanan pesan umpan balik (`feedback/`)**
   * **Ukuran:** S
   * **Rujukan:** TRD 6.2.15; PRD 4.2 poin 7, PRD UC-12; kode lama `server/routes/account.js`
   * **Dependensi:** T-2.6
@@ -919,3 +919,10 @@ Berikut adalah daftar temuan teknis serta parameter bisnis yang belum ditetapkan
     * *Asumsi & Keputusan Implementasi:* Mengikuti TRD persis (aturan "ikuti TRD"). Blok `sales_trend` dan `stock_movement` tidak dibuat; bila grafik diperlukan frontend, perlu keputusan menambah blok atau endpoint terpisah.
 14. **Definisi perhitungan Dashboard yang tidak dirinci TRD:**
     * *Asumsi & Keputusan Implementasi:* `waste.*_cost` = Σ(qty waste_logs × `ingredients.price`) per bulan kalender (WIB), `reduction_percentage` = (prev − cur)/prev × 100 (0 bila prev = 0); `risk.high/medium` dari level `tinggi/sedang` hasil rekomendasi, `low` = sisa bahan; `buy` dari item berstatus `beli` (jumlah dan Σ`buy_cost`); `history_days` = jumlah tanggal penjualan berbeda; `remaining_portions` = min(⌊stok layak pakai / takaran⌋) di seluruh bahan resep produk aktif (0 bila tanpa resep). Bila riwayat < 14 hari (rekomendasi tidak tersedia), risk/buy bernilai 0 dan `low` = jumlah bahan.
+15. **Kontrak Subscription (Fase 7) — TRD vs tugas:**
+    * *Kondisi:* TRD 6.2.13 meminta body checkout `{method, months}`, `pro_until` bertipe datetime (`...T23:59:59Z`), `order_id` `SUB-YYYYMMDD-NNN`, dan metode `qris/va_bca/va_mandiri/gopay`; T-7.1 hanya menyebut perpanjangan 30 hari dan status `completed`. Kolom `users.pro_until` bertipe `date`.
+    * *Asumsi & Keputusan Implementasi:* Mengikuti TRD: `months` (default 1, 1–12) → 30 × months hari, amount Rp100.000 × months; `pro_until` dikembalikan sebagai tanggal (`date`) karena kolom DB bertipe date; `order_id` = `SUB-<tanggal mulai>-<id payment 3 digit>`; record `payments.status = 'completed'`, respons `status: "active"`. Checkout saat masih Pro memperpanjang dari `pro_until`. `cancel` langsung mengembalikan `role` ke `freemium` dan mengosongkan `pro_until` (sesuai T-7.1; TRD berjudul "batalkan perpanjangan" tetapi respons contohnya `role: freemium`).
+16. **Kontrak Integration (Fase 7):**
+    * *Kondisi:* TRD 6.2.14 menetapkan `GET /integrations` hanya butuh login, sedangkan T-7.2 menyebut seluruh endpoint dilindungi Pro. Pesan 403 TRD berbeda dari pesan default `require_pro_plan`. Skema `sales` tidak punya kolom tanggal/waktu pesanan selain `date`.
+    * *Asumsi & Keputusan Implementasi:* `GET` terbuka untuk semua pengguna login; `connect` dan `sync` memakai `require_pro_plan` dengan pesan TRD. Mock sync membuat 8 baris `sales` (produk aktif acak, qty 1–3, tanggal hari ini WIB, `source = provider`); `synced_orders` = jumlah baris, 0 bila tak ada produk aktif. `api_key` disimpan apa adanya (simulasi) dan tidak pernah dikembalikan di respons. Kuota Freemium 300 transaksi tidak diterapkan pada sync (hanya Pro yang dapat sync).
+17. **Tes API dan rate limit:** Tes yang login berulang melebihi batas 5 req/menit pada `/auth/*`. `tests/conftest.py` kini memanggil `rate_limiter.reset()` sebelum tiap tes; kode produksi tidak diubah.
