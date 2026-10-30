@@ -696,7 +696,7 @@ Tujuan: Membangun modul paket Pro, sinkronisasi data pesanan POS/ojol, dan formu
 ### Fase 8: Penyesuaian & Integrasi Frontend
 Tujuan: Menyesuaikan antarmuka Vanilla JS / PWA di `src/frontend/` agar kompatibel penuh dengan base path API `/api/v1`, envelope standard response, kredensial cookie HttpOnly, serta kode error 401 dan 429.
 
-- [ ] **T-8.1 Refactoring klien API Frontend (`src/frontend/js/api.js`)**
+- [x] **T-8.1 Refactoring klien API Frontend (`src/frontend/js/api.js`)**
   * **Ukuran:** M
   * **Rujukan:** TRD 4.3 poin 7, TRD 6.3; kode frontend `src/frontend/js/api.js`
   * **Dependensi:** T-2.8
@@ -711,7 +711,7 @@ Tujuan: Menyesuaikan antarmuka Vanilla JS / PWA di `src/frontend/` agar kompatib
   * **Kriteria Selesai:**
     * Fungsi `api.get('/health')` mengembalikan payload `data` secara langsung tanpa memecah struktur UI pemanggil.
 
-- [ ] **T-8.2 Penyesuaian halaman Auth, Profil Akun, & Onboarding**
+- [x] **T-8.2 Penyesuaian halaman Auth, Profil Akun, & Onboarding**
   * **Ukuran:** S
   * **Rujukan:** TRD 6.2.1, TRD 6.2.2; PRD UC-01, UC-12
   * **Dependensi:** T-8.1, T-2.9
@@ -723,7 +723,7 @@ Tujuan: Menyesuaikan antarmuka Vanilla JS / PWA di `src/frontend/` agar kompatib
   * **Kriteria Selesai:**
     * Pengguna dapat melakukan login melalui form web, halaman beralih ke dashboard, dan nama pengguna tampil di navigasi.
 
-- [ ] **T-8.3 Penyesuaian halaman Master Bahan, Menu, & Event**
+- [x] **T-8.3 Penyesuaian halaman Master Bahan, Menu, & Event**
   * **Ukuran:** S
   * **Rujukan:** TRD 6.2.3, TRD 6.2.4, TRD 6.2.8; PRD UC-02
   * **Dependensi:** T-8.1, T-3.5
@@ -926,3 +926,9 @@ Berikut adalah daftar temuan teknis serta parameter bisnis yang belum ditetapkan
     * *Kondisi:* TRD 6.2.14 menetapkan `GET /integrations` hanya butuh login, sedangkan T-7.2 menyebut seluruh endpoint dilindungi Pro. Pesan 403 TRD berbeda dari pesan default `require_pro_plan`. Skema `sales` tidak punya kolom tanggal/waktu pesanan selain `date`.
     * *Asumsi & Keputusan Implementasi:* `GET` terbuka untuk semua pengguna login; `connect` dan `sync` memakai `require_pro_plan` dengan pesan TRD. Mock sync membuat 8 baris `sales` (produk aktif acak, qty 1–3, tanggal hari ini WIB, `source = provider`); `synced_orders` = jumlah baris, 0 bila tak ada produk aktif. `api_key` disimpan apa adanya (simulasi) dan tidak pernah dikembalikan di respons. Kuota Freemium 300 transaksi tidak diterapkan pada sync (hanya Pro yang dapat sync).
 17. **Tes API dan rate limit:** Tes yang login berulang melebihi batas 5 req/menit pada `/auth/*`. `tests/conftest.py` kini memanggil `rate_limiter.reset()` sebelum tiap tes; kode produksi tidak diubah.
+18. **Penyesuaian Integrasi Frontend (Fase 8A - T-8.1, T-8.2, T-8.3):**
+    * *Kondisi:* TRD 4.3 poin 7 & 6.1 mensyaratkan autentikasi berbasis HttpOnly cookie dengan penanganan refresh 401 dan rate limit 429. Halaman master menu lama menggunakan format `recipes` array sedangkan TRD 6.2.4 menggunakan `recipe`. Pada `event.js`, input persentase dampak menggunakan slider/number yang perlu sinkron dengan backend `multiplier = 1.0 + pct/100`.
+    * *Asumsi & Keputusan Implementasi:*
+      - `src/frontend/js/api.js`: Konfigurasi base path menunjuk ke `http://localhost:8000/api/v1` dengan `credentials: 'include'` aktif di seluruh request. Interceptor 401 mengimplementasikan lock single-flight refresh dan mengecualikan `/auth/login`, `/auth/register`, `/auth/refresh`, `/auth/logout` dari rekursi refresh. Penanganan 429 mengekstrak header `Retry-After` dan memicu toast "Terlalu banyak permintaan. Silakan tunggu X detik".
+      - `src/frontend/js/pages/auth.js` & `akun.js`: Token dihapus total dari `localStorage`/`sessionStorage`. Pembaruan profil menggunakan `PATCH /users/me`, perubahan password `PATCH /users/me/password`, dan hapus akun `DELETE /users/me`.
+      - `src/frontend/js/pages/bahan.js`, `menu.js`, `event.js`: Diadaptasi penuh ke endpoint `/ingredients`, `/batches`, `/waste-logs`, `/products`, dan `/events` dengan payload dan respons envelope standar. Seluruh perubahan tabel berjalan reaktif tanpa reload halaman.

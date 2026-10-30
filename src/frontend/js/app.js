@@ -18,6 +18,7 @@ import { akun, profil, feedback, hapusAkun } from './pages/akun.js';
 const ROUTES = {
   '/onboarding': { page: onboarding, public: true },
   '/login': { page: login, public: true },
+  '/auth': { page: login, public: true },
   '/register': { page: register, public: true },
   '/dashboard': { page: dashboard, nav: 'dashboard' },
   '/bahan': { page: bahan, nav: 'bahan' },
@@ -241,8 +242,8 @@ window.addEventListener('hashchange', route);
 
 (async function init() {
   try {
-    const { user } = await api('/auth/me');
-    state.user = user;
+    const data = await api('/auth/me');
+    state.user = data?.user || data;
   } catch {
     state.user = null;
   }

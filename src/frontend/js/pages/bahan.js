@@ -10,9 +10,9 @@ const STATUS = {
 
 function ingredientForm(i = {}) {
   return html`<form class="stack" id="f" novalidate>
-    <div class="field"><label>Nama bahan</label><input class="input" name="name" value="${i.name || ''}" placeholder="cth. Ayam potong" /></div>
+    <div class="field"><label>Nama bahan</label><input class="input" name="name" value="${i.name || ''}" placeholder="cth. Ayam potong" required /></div>
     <div class="grid grid-2" style="gap:12px">
-      <div class="field"><label>Satuan</label><input class="input" name="unit" list="units" value="${i.unit || ''}" placeholder="kg, liter, butir…" />
+      <div class="field"><label>Satuan</label><input class="input" name="unit" list="units" value="${i.unit || ''}" placeholder="kg, liter, butir…" required />
         <datalist id="units"><option>kg</option><option>gram</option><option>liter</option><option>ml</option><option>butir</option><option>buah</option><option>potong</option><option>papan</option><option>ikat</option><option>bungkus</option><option>botol</option><option>kotak</option></datalist></div>
       <div class="field"><label>Harga per satuan (Rp)</label><input class="input" name="price" inputmode="decimal" value="${i.price ?? ''}" placeholder="0" /></div>
     </div>
@@ -40,9 +40,13 @@ async function editIngredient(item, reload) {
             onClick: async () => {
               const ok = await confirmDialog({ title: `Hapus ${item.name}?`, message: 'Seluruh riwayat stok bahan ini dan komposisinya di menu ikut terhapus.', confirm: 'Hapus', danger: true });
               if (!ok) return false;
-              await api(`/ingredients/${item.id}`, { method: 'DELETE' });
-              toast('Bahan dihapus');
-              reload();
+              try {
+                await api(`/ingredients/${item.id}`, { method: 'DELETE' });
+                toast('Bahan dihapus');
+                reload();
+              } catch (err) {
+                toast(err.message, 'error');
+              }
             },
           }]
         : []),
@@ -50,10 +54,34 @@ async function editIngredient(item, reload) {
       {
         label: 'Simpan',
         onClick: async (m) => {
-          const body = formData(m.querySelector('#f'));
-          await api(item ? `/ingredients/${item.id}` : '/ingredients', { method: item ? 'PUT' : 'POST', body });
-          toast(item ? 'Bahan diperbarui' : 'Bahan ditambahkan');
-          reload();
+          const d = formData(m.querySelector('#f'));
+          const body = {
+            name: (d.name || '').trim(),
+            unit: (d.unit || '').trim(),
+            category: d.category || 'segar',
+            shelf_life_days: Math.max(1, parseInt(d.shelf_life_days, 10) || 1),
+            min_stock: Math.max(0, parseFloat(d.min_stock) || 0),
+            price: Math.max(0, parseFloat(d.price) || 0),
+          };
+          if (!body.name) {
+            toast('Nama bahan wajib diisi.', 'error');
+            return false;
+          }
+          if (!body.unit) {
+            toast('Satuan bahan wajib diisi.', 'error');
+            return false;
+          }
+          try {
+            await api(item ? `/ingredients/${item.id}` : '/ingredients', {
+              method: item ? 'PATCH' : 'POST',
+              body,
+            });
+            toast(item ? 'Bahan diperbarui' : 'Bahan ditambahkan');
+            reload();
+          } catch (err) {
+            toast(err.message, 'error');
+            return false;
+          }
         },
       },
     ],
@@ -73,7 +101,7 @@ function batchDetail(item, reload) {
         <div class="portion"><small>Kedaluwarsa terdekat</small><b style="font-size:17px">${item.nearest_expiry ? dateMed(item.nearest_expiry) : '–'}</b></div>
       </div>
       <h3>Batch stok (FEFO: yang paling cepat kedaluwarsa dipakai dulu)</h3>
-      ${item.batches.length
+      ${(item.batches || []).length
         ? html`<div class="table-wrap"><table class="table"><thead><tr><th>Masuk</th><th>Kedaluwarsa</th><th class="num">Sisa</th><th class="num">Harga</th><th></th></tr></thead><tbody>
             ${item.batches.map((b) => {
               const left = Math.round((Date.parse(b.expiry) - Date.parse(T)) / 86400000);
@@ -93,7 +121,7 @@ function batchDetail(item, reload) {
         (b) =>
           (b.onclick = async () => {
             if (!(await confirmDialog({ title: 'Hapus batch ini?', message: 'Gunakan hanya jika batch tersebut salah input.', confirm: 'Hapus', danger: true }))) return;
-            await api(`/stock/batches/${b.dataset.del}`, { method: 'DELETE' });
+            await api(`/batches/${b.dataset.del}`, { method: 'DELETE' });
             toast('Batch dihapus');
             close();
             reload();
@@ -107,11 +135,58 @@ export const bahan = {
   async render(el) {
     let filter = 'semua';
     let q = '';
-    let data;
+    let data = { items: [] };
     const reload = async () => {
-      data = await api('/stock');
+      const [ingsRes, batchesRes] = await Promise.all([
+        api('/ingredients'),
+        api('/batches?active_only=true').catch(() => ({ items: [] })),
+      ]);
+      const rawIngs = Array.isArray(ingsRes) ? ingsRes : ingsRes?.items || [];
+      const rawBatches = Array.isArray(batchesRes) ? batchesRes : batchesRes?.items || [];
+
+      // Group batches by ingredient_id
+      const batchMap = new Map();
+      rawBatches.forEach((b) => {
+        const iid = b.ingredient_id;
+        if (!batchMap.has(iid)) batchMap.set(iid, []);
+        batchMap.get(iid).push({
+          id: b.id,
+          received: b.received_date,
+          expiry: b.expiry_date,
+          qty: Number(b.qty),
+          price: Number(b.unit_price || 0),
+        });
+      });
+
+      const items = rawIngs.map((i) => {
+        const batches = batchMap.get(i.id) || [];
+        const stockFromBatches = batches.reduce((s, b) => s + b.qty, 0);
+        const stock = stockFromBatches > 0 ? stockFromBatches : Number(i.stock_now ?? i.stock ?? 0);
+        const minStock = Number(i.min_stock ?? 0);
+        const price = Number(i.price ?? 0);
+        const expiries = batches.map((b) => b.expiry).filter(Boolean).sort();
+        const nearestExpiry = expiries[0] || i.nearest_expiry || null;
+
+        let status = 'aman';
+        if (stock <= 0) status = 'habis';
+        else if (minStock > 0 && stock <= minStock) status = 'menipis';
+
+        return {
+          ...i,
+          stock,
+          price,
+          min_stock: minStock,
+          value: stock * price,
+          status: i.status || status,
+          nearest_expiry: nearestExpiry,
+          batches,
+        };
+      });
+
+      data = { items };
       draw();
     };
+
     topbarActions(html`<button class="btn btn-sm" id="add-ing">${icon('plus')}<span>Bahan</span></button>`);
     document.getElementById('add-ing').onclick = () => editIngredient(null, reload);
 
@@ -150,7 +225,7 @@ export const bahan = {
                     <td>${categoryBadge(i.category)}</td>
                     <td class="num nowrap"><b>${qty(i.stock, i.unit)}</b>${i.min_stock ? html`<div class="xs muted">min ${number(i.min_stock)}</div>` : ''}</td>
                     <td class="nowrap">${i.nearest_expiry ? dateMed(i.nearest_expiry) : '–'}</td>
-                    <td><span class="badge dot ${STATUS[i.status][0]}">${STATUS[i.status][1]}</span></td>
+                    <td><span class="badge dot ${STATUS[i.status] ? STATUS[i.status][0] : 'ok'}">${STATUS[i.status] ? STATUS[i.status][1] : i.status}</span></td>
                     <td class="right">${icon('chevronRight')}</td>
                   </tr>`
                 )}</tbody></table></div>`
@@ -163,8 +238,10 @@ export const bahan = {
         const pos = qi.selectionStart;
         draw();
         const n = el.querySelector('#q');
-        n.focus();
-        n.setSelectionRange(pos, pos);
+        if (n) {
+          n.focus();
+          n.setSelectionRange(pos, pos);
+        }
       };
       el.querySelectorAll('[data-filter]').forEach((c) => (c.onclick = () => ((filter = c.dataset.filter), draw())));
       el.querySelectorAll('tr[data-id]').forEach((r) => (r.onclick = () => batchDetail(data.items.find((i) => i.id === +r.dataset.id), reload)));
@@ -175,11 +252,12 @@ export const bahan = {
   },
 };
 
-// Tahap 6: catat pembelian (stok masuk) & bahan terbuang
+// Catat pembelian (stok masuk) & bahan terbuang
 export const stokMasuk = {
   title: 'Catat Stok',
   async render(el, ctx, params) {
-    const [ings, stock] = await Promise.all([api('/ingredients'), api('/stock')]);
+    const ingsRes = await api('/ingredients');
+    const ings = Array.isArray(ingsRes) ? ingsRes : ingsRes?.items || [];
     let tab = params.tab === 'terbuang' ? 'terbuang' : 'masuk';
     const T = todayStr();
     if (!ings.length) {
@@ -217,7 +295,7 @@ export const stokMasuk = {
               <div class="grid grid-2" style="gap:12px">
                 <div class="field"><label>Bahan</label><select class="input" name="ingredient_id">${opt(params.bahan)}</select></div>
                 <div class="field"><label>Tanggal</label><input class="input" type="date" name="date" value="${T}" max="${T}" min="${addDays(T, -30)}" /></div>
-                <div class="field"><label>Jumlah</label><input class="input" name="qty" inputmode="decimal" placeholder="0" /><span class="hint" id="avail"></span></div>
+                <div class="field"><label>Jumlah</label><input class="input" name="qty" inputmode="decimal" placeholder="0" /></div>
                 <div class="field"><label>Alasan</label><select class="input" name="reason"><option value="rusak">Rusak / busuk</option><option value="sisa tidak terjual">Sisa tidak terjual</option><option value="kedaluwarsa">Kedaluwarsa</option><option value="lainnya">Lainnya</option></select></div>
               </div>
               <button class="btn btn-danger" type="submit" style="align-self:flex-end">${icon('trash')}Catat terbuang</button>
@@ -247,10 +325,24 @@ export const stokMasuk = {
         form.onsubmit = async (e) => {
           e.preventDefault();
           const date = form.date.value;
-          const items = rows.filter((r) => Number(r.qty) > 0).map((r) => ({ ...r, date }));
+          const items = rows.filter((r) => Number(r.qty) > 0);
           if (!items.length) return toast('Isi jumlah bahan yang dibeli.', 'error');
           try {
-            await api('/stock/in', { method: 'POST', body: { items } });
+            for (const r of items) {
+              const ing = ings.find((i) => i.id === +r.ingredient_id) || ings[0];
+              const shelfLife = Math.max(1, Number(ing.shelf_life_days) || 1);
+              const expiry = addDays(date, shelfLife);
+              await api('/batches', {
+                method: 'POST',
+                body: {
+                  ingredient_id: Number(r.ingredient_id),
+                  qty: Number(r.qty),
+                  unit_price: Number(r.unit_price ?? ing.price ?? 0),
+                  received_date: date,
+                  expiry_date: expiry,
+                },
+              });
+            }
             toast(`${items.length} pembelian tercatat`);
             ctx.go('/bahan');
           } catch (err) {
@@ -259,16 +351,19 @@ export const stokMasuk = {
         };
       } else {
         const form = el.querySelector('#w');
-        const showAvail = () => {
-          const s = stock.items.find((i) => i.id === +form.ingredient_id.value);
-          el.querySelector('#avail').textContent = s ? `Stok tersedia ${qty(s.stock, s.unit)}` : '';
-        };
-        form.ingredient_id.onchange = showAvail;
-        showAvail();
         form.onsubmit = async (e) => {
           e.preventDefault();
           try {
-            await api('/stock/waste', { method: 'POST', body: formData(form) });
+            const d = formData(form);
+            await api('/waste-logs', {
+              method: 'POST',
+              body: {
+                ingredient_id: Number(d.ingredient_id),
+                date: d.date,
+                qty: Number(d.qty),
+                reason: d.reason || 'lainnya',
+              },
+            });
             toast('Bahan terbuang tercatat');
             ctx.go('/riwayat?type=waste');
           } catch (err) {

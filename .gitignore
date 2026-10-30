@@ -24,6 +24,7 @@ dist/
 .pytest_cache/
 .coverage
 htmlcov/
+tests/e2e/artifacts/
 
 # Database & Volumes
 data/

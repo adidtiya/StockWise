@@ -2,7 +2,7 @@ import { api } from '../api.js';
 import { html, icon, loading, modal, confirmDialog, toast, rupiah, number, emptyState, topbarActions } from '../ui.js';
 
 async function editProduct(product, ings, reload) {
-  let recipe = product?.recipe?.map((r) => ({ ingredient_id: r.ingredient_id, qty: r.qty })) || [{ ingredient_id: ings[0]?.id, qty: '' }];
+  let recipe = (product?.recipe || product?.recipes)?.map((r) => ({ ingredient_id: r.ingredient_id, qty: r.qty })) || [{ ingredient_id: ings[0]?.id, qty: '' }];
   const rowsHtml = () =>
     recipe.map((r, k) => {
       const ing = ings.find((i) => i.id === +r.ingredient_id);
@@ -18,7 +18,7 @@ async function editProduct(product, ings, reload) {
     wide: true,
     body: html`<form class="stack" id="f" novalidate>
       <div class="grid grid-2" style="gap:12px">
-        <div class="field"><label>Nama menu</label><input class="input" name="name" value="${product?.name || ''}" placeholder="cth. Nasi Ayam Goreng" /></div>
+        <div class="field"><label>Nama menu</label><input class="input" name="name" value="${product?.name || ''}" placeholder="cth. Nasi Ayam Goreng" required /></div>
         <div class="field"><label>Harga jual (Rp)</label><input class="input" name="price" inputmode="numeric" value="${product?.price ?? ''}" placeholder="0" /></div>
       </div>
       <div class="field"><span class="label-text">Komposisi bahan per porsi</span><span class="hint">Takaran ini menerjemahkan forecast penjualan menu menjadi kebutuhan bahan baku.</span></div>
@@ -53,9 +53,13 @@ async function editProduct(product, ings, reload) {
             cls: 'btn-ghost',
             onClick: async () => {
               if (!(await confirmDialog({ title: `Nonaktifkan ${product.name}?`, message: 'Menu tidak lagi muncul di input penjualan dan forecast. Riwayat penjualannya tetap disimpan.', confirm: 'Nonaktifkan', danger: true }))) return false;
-              await api(`/products/${product.id}`, { method: 'DELETE' });
-              toast('Menu dinonaktifkan');
-              reload();
+              try {
+                await api(`/products/${product.id}`, { method: 'DELETE' });
+                toast('Menu dinonaktifkan');
+                reload();
+              } catch (err) {
+                toast(err.message, 'error');
+              }
             },
           }]
         : []),
@@ -64,10 +68,36 @@ async function editProduct(product, ings, reload) {
         label: 'Simpan',
         onClick: async (m) => {
           const f = m.querySelector('#f');
-          const body = { name: f.name.value, price: f.price.value, recipe: recipe.filter((r) => String(r.qty).trim() !== '') };
-          await api(product ? `/products/${product.id}` : '/products', { method: product ? 'PUT' : 'POST', body });
-          toast(product ? 'Menu diperbarui' : 'Menu ditambahkan');
-          reload();
+          const name = (f.name.value || '').trim();
+          const price = parseFloat(f.price.value) || 0;
+          const recipeItems = recipe
+            .filter((r) => r.ingredient_id && String(r.qty).trim() !== '' && Number(r.qty) > 0)
+            .map((r) => ({
+              ingredient_id: Number(r.ingredient_id),
+              qty: Number(r.qty),
+            }));
+
+          if (!name) {
+            toast('Nama menu wajib diisi.', 'error');
+            return false;
+          }
+          if (!recipeItems.length) {
+            toast('Pilih minimal satu bahan resep dengan takaran lebih dari 0.', 'error');
+            return false;
+          }
+
+          const body = { name, price, recipes: recipeItems, recipe: recipeItems };
+          try {
+            await api(product ? `/products/${product.id}` : '/products', {
+              method: product ? 'PATCH' : 'POST',
+              body,
+            });
+            toast(product ? 'Menu diperbarui' : 'Menu ditambahkan');
+            reload();
+          } catch (err) {
+            toast(err.message, 'error');
+            return false;
+          }
         },
       },
     ],
@@ -78,10 +108,12 @@ export default {
   title: 'Menu & Resep',
   async render(el) {
     el.innerHTML = loading(2);
-    let products;
-    let ings;
+    let products = [];
+    let ings = [];
     const reload = async () => {
-      [products, ings] = await Promise.all([api('/products'), api('/ingredients')]);
+      const [prodRes, ingsRes] = await Promise.all([api('/products'), api('/ingredients')]);
+      products = Array.isArray(prodRes) ? prodRes : prodRes?.items || [];
+      ings = Array.isArray(ingsRes) ? ingsRes : ingsRes?.items || [];
       draw();
     };
     topbarActions(html`<button class="btn btn-sm" id="add-prod">${icon('plus')}<span>Menu</span></button>`);
@@ -93,7 +125,8 @@ export default {
         <div class="callout">${icon('info')}<div>Komposisi bahan per porsi dipakai untuk mengubah forecast penjualan menu menjadi kebutuhan bahan, dan untuk menghitung berapa porsi yang masih bisa dibuat dari stok.</div></div>
         ${products.length
           ? html`<div class="grid grid-2">${products.map((p) => {
-              const hpp = p.recipe.reduce((s, r) => s + r.qty * (priceOf.get(r.ingredient_id) || 0), 0);
+              const rList = p.recipe || p.recipes || [];
+              const hpp = rList.reduce((s, r) => s + (Number(r.qty) || 0) * (priceOf.get(r.ingredient_id) || 0), 0);
               const margin = p.price ? (p.price - hpp) / p.price : null;
               return html`<div class="card">
                 <div class="row-between" style="margin-bottom:10px">
@@ -101,8 +134,8 @@ export default {
                     <div><h3>${p.name}</h3><span class="small muted">${rupiah(p.price)} · HPP bahan ${rupiah(hpp)}${margin != null ? ` · margin ${Math.round(margin * 100)}%` : ''}</span></div></div>
                   <button class="icon-btn" data-edit="${p.id}" aria-label="Ubah ${p.name}">${icon('edit')}</button>
                 </div>
-                <div class="list">${p.recipe.map(
-                  (r) => html`<div class="list-item" style="padding:7px 0"><span class="grow small">${r.name}</span><b class="small num">${number(r.qty, 3)} ${r.unit}</b></div>`
+                <div class="list">${rList.map(
+                  (r) => html`<div class="list-item" style="padding:7px 0"><span class="grow small">${r.name || r.ingredient_name || 'Bahan'}</span><b class="small num">${number(r.qty, 3)} ${r.unit || ''}</b></div>`
                 )}</div>
               </div>`;
             })}</div>`

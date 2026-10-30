@@ -30,8 +30,6 @@ export const login = {
             <div class="form-error" id="err"></div>
             <button class="btn btn-lg btn-block" type="submit">Masuk</button>
           </form>
-          <div class="or" style="margin:20px 0 14px">atau coba akun demo</div>
-          <div class="stack-sm" id="demos"></div>
           <div style="flex:1"></div>
           <p class="center small" style="margin-top:22px">Belum punya akun? <a href="#/register"><b>Daftar gratis</b></a></p>
         </div>
@@ -48,9 +46,15 @@ export const login = {
       err.textContent = '';
       btn.disabled = true;
       try {
-        const { user } = await api('/auth/login', { method: 'POST', body: { email, password } });
+        const res = await api('/auth/login', { method: 'POST', body: { email, password } });
+        const user = res?.user || res;
         ctx.setUser(user);
-        toast(`Selamat datang, ${user.name.split(' ')[0]}!`);
+        try {
+          localStorage.setItem('sw_onboarded', '1');
+        } catch {
+          /* private mode */
+        }
+        toast(`Selamat datang, ${user.name ? user.name.split(' ')[0] : 'Pengguna'}!`);
         ctx.go('/dashboard');
       } catch (e) {
         err.textContent = e.message;
@@ -64,26 +68,6 @@ export const login = {
       if (!d.email || !d.password) return (err.textContent = 'Email dan kata sandi wajib diisi.');
       doLogin(d.email, d.password, form.querySelector('[type=submit]'));
     };
-
-    try {
-      const demos = await api('/auth/demo-accounts');
-      root.querySelector('#demos').innerHTML = html`${demos.map(
-        (d) => html`<button class="choice" data-email="${d.email}" data-pass="${d.password}" style="flex-direction:row;align-items:center;text-align:left">
-          <div class="ico">${icon(d.role === 'pro' ? 'crown' : 'store')}</div>
-          <div class="grow"><b>${d.business_name}</b><br /><span>${d.role === 'pro' ? 'Pemilik UMKM Pro · katering' : 'Pemilik UMKM Freemium · warung'}</span></div>
-          ${icon('chevronRight')}
-        </button>`
-      )}`;
-      root.querySelectorAll('#demos [data-email]').forEach((b) => {
-        b.onclick = () => {
-          form.email.value = b.dataset.email;
-          form.password.value = b.dataset.pass;
-          doLogin(b.dataset.email, b.dataset.pass, b);
-        };
-      });
-    } catch {
-      /* daftar demo opsional */
-    }
   },
 };
 
@@ -182,8 +166,26 @@ export const register = {
         btn.disabled = true;
         btn.textContent = data.seed_demo ? 'Menyiapkan data contoh…' : 'Membuat akun…';
         try {
-          const { user } = await api('/auth/register', { method: 'POST', body: data });
+          const payload = {
+            name: data.name,
+            email: data.email,
+            password: data.password,
+            business_name: data.business_name,
+            business_type: data.business_type,
+            city: data.city || null,
+            phone: data.phone || null,
+            plan: data.plan || 'freemium',
+            payment_method: data.payment_method || null,
+            seed_demo: !!data.seed_demo,
+          };
+          const res = await api('/auth/register', { method: 'POST', body: payload });
+          const user = res?.user || res;
           ctx.setUser(user);
+          try {
+            localStorage.setItem('sw_onboarded', '1');
+          } catch {
+            /* private mode */
+          }
           toast(user.role === 'pro' ? 'Akun Pro aktif. Selamat datang!' : 'Akun berhasil dibuat. Selamat datang!');
           ctx.go(data.seed_demo ? '/dashboard' : '/bahan');
         } catch (e2) {

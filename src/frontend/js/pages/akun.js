@@ -100,7 +100,8 @@ export const profil = {
     pf.onsubmit = async (e) => {
       e.preventDefault();
       try {
-        const { user } = await api('/auth/me', { method: 'PUT', body: formData(pf) });
+        const res = await api('/users/me', { method: 'PATCH', body: formData(pf) });
+        const user = res?.user || res;
         ctx.setUser(user);
         toast('Profil diperbarui');
         profil.render(el, ctx);
@@ -120,7 +121,7 @@ export const profil = {
           {
             label: 'Simpan',
             onClick: async (m) => {
-              await api('/auth/me/password', { method: 'PUT', body: formData(m.querySelector('#f')) });
+              await api('/users/me/password', { method: 'PATCH', body: formData(m.querySelector('#f')) });
               toast('Kata sandi diperbarui');
             },
           },
@@ -216,7 +217,7 @@ export const hapusAkun = {
       btn.disabled = true;
       try {
         const d = formData(f);
-        await api('/auth/me', { method: 'DELETE', body: { password: d.password, confirm: d.confirm } });
+        await api('/users/me', { method: 'DELETE', body: { password: d.password, confirm: d.confirm } });
         toast('Akun dan seluruh data telah dihapus.');
         ctx.setUser(null);
         try {
@@ -224,7 +225,7 @@ export const hapusAkun = {
         } catch {
           /* abaikan */
         }
-        location.hash = '/onboarding';
+        location.hash = '/login';
         location.reload();
       } catch (err) {
         toast(err.message, 'error');

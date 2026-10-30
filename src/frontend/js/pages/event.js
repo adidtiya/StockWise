@@ -8,8 +8,8 @@ async function editEvent(ev, reload) {
   await modal({
     title: ev ? 'Ubah event' : 'Tambah event',
     body: html`<form class="stack" id="f" novalidate>
-      <div class="field"><label>Nama event</label><input class="input" name="name" value="${ev?.name || ''}" placeholder="cth. Pesanan arisan RT, Bazar sekolah" /></div>
-      <div class="field"><label>Tanggal</label><input class="input" type="date" name="date" value="${ev?.date || todayStr()}" /></div>
+      <div class="field"><label>Nama event</label><input class="input" name="name" value="${ev?.name || ''}" placeholder="cth. Pesanan arisan RT, Bazar sekolah" required /></div>
+      <div class="field"><label>Tanggal</label><input class="input" type="date" name="date" value="${ev?.date || todayStr()}" required /></div>
       <div class="field"><label>Perkiraan dampak ke penjualan</label>
         <div class="row"><input type="range" name="pct" min="-80" max="200" step="5" value="${pctVal}" class="grow" style="accent-color:var(--brand)" /><b id="pv" class="num" style="width:64px;text-align:right">${pctVal > 0 ? '+' : ''}${pctVal}%</b></div>
         <span class="hint">Dipakai sebagai nilai awal. Setelah event yang sama pernah terjadi, StockWise mempelajari dampak sebenarnya dari data penjualan.</span></div>
@@ -25,9 +25,13 @@ async function editEvent(ev, reload) {
             cls: 'btn-ghost',
             onClick: async () => {
               if (!(await confirmDialog({ title: `Hapus ${ev.name}?`, message: 'Label event pada tanggal ini dihapus dari data latih.', confirm: 'Hapus', danger: true }))) return false;
-              await api(`/events/${ev.id}`, { method: 'DELETE' });
-              toast('Event dihapus');
-              reload();
+              try {
+                await api(`/events/${ev.id}`, { method: 'DELETE' });
+                toast('Event dihapus');
+                reload();
+              } catch (err) {
+                toast(err.message, 'error');
+              }
             },
           }]
         : []),
@@ -36,28 +40,54 @@ async function editEvent(ev, reload) {
         label: 'Simpan',
         onClick: async (m) => {
           const d = formData(m.querySelector('#f'));
-          await api(ev ? `/events/${ev.id}` : '/events', { method: ev ? 'PUT' : 'POST', body: { name: d.name, date: d.date, impact: 1 + Number(d.pct) / 100 } });
-          toast(ev ? 'Event diperbarui' : 'Event ditambahkan');
-          reload();
+          const name = (d.name || '').trim();
+          if (!name) {
+            toast('Nama event wajib diisi.', 'error');
+            return false;
+          }
+          if (!d.date) {
+            toast('Tanggal event wajib diisi.', 'error');
+            return false;
+          }
+          const body = {
+            name,
+            date: d.date,
+            impact: Math.max(0.1, 1 + Number(d.pct) / 100),
+            category: ev?.category || 'custom',
+          };
+          try {
+            await api(ev ? `/events/${ev.id}` : '/events', {
+              method: ev ? 'PATCH' : 'POST',
+              body,
+            });
+            toast(ev ? 'Event diperbarui' : 'Event ditambahkan');
+            reload();
+          } catch (err) {
+            toast(err.message, 'error');
+            return false;
+          }
         },
       },
     ],
   });
 }
 
-// Tahap 3: Event tagging
+// Event tagging
 export default {
   title: 'Event & Hari Khusus',
   async render(el) {
     el.innerHTML = loading(2);
     const T = todayStr();
     let view = 'mendatang';
-    let events;
+    let events = [];
     let learned = new Map();
     const reload = async () => {
-      const [ev, evalData] = await Promise.all([api('/events'), api('/evaluation').catch(() => null)]);
-      events = ev;
-      learned = new Map((evalData?.learned_events || []).map((e) => [e.name, e]));
+      const [evRes, evalData] = await Promise.all([
+        api('/events'),
+        api('/evaluation').catch(() => null),
+      ]);
+      events = Array.isArray(evRes) ? evRes : evRes?.items || [];
+      learned = new Map(((evalData && evalData.learned_events) || []).map((e) => [e.name, e]));
       draw();
     };
     topbarActions(html`<button class="btn btn-sm" id="add-ev">${icon('plus')}<span>Event</span></button>`);
@@ -92,4 +122,3 @@ export default {
     await reload();
   },
 };
-
