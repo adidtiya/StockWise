@@ -466,7 +466,7 @@ Tujuan: Membangun modul manajemen master bahan baku, takaran resep menu produk, 
 ### Fase 4: Domain Penjualan & Impor Transaksi
 Tujuan: Membangun modul input penjualan harian manual, parser in-memory berkas impor Excel tanpa object storage eksternal, dan penayangan riwayat transaksi latih.
 
-- [ ] **T-4.1 Domain Sale: Pencatatan penjualan harian manual & mutasi stok (`sale/`)**
+- [x] **T-4.1 Domain Sale: Pencatatan penjualan harian manual & mutasi stok (`sale/`)**
   * **Ukuran:** M
   * **Rujukan:** TRD 2.2 poin 4, TRD 5, TRD 6.2.7; PRD UC-03; kode lama `server/routes/data.js` (`/api/sales`)
   * **Dependensi:** T-3.2, T-3.3
@@ -484,7 +484,7 @@ Tujuan: Membangun modul input penjualan harian manual, parser in-memory berkas i
   * **Kriteria Selesai:**
     * `POST /api/v1/sales` dengan 10 porsi "Ayam Bakar" berhasil mencatat record di tabel `sales` dan memotong kuantitas batch ayam terkait di tabel `batches`.
 
-- [ ] **T-4.2 Domain Sale: Impor riwayat penjualan Excel dengan validasi in-memory**
+- [x] **T-4.2 Domain Sale: Impor riwayat penjualan Excel dengan validasi in-memory**
   * **Ukuran:** M
   * **Rujukan:** TRD 3.1 poin 2, TRD 6.2.7; PRD UC-04, PRD 6.2; kode lama `server/routes/data.js` (`/api/import`)
   * **Dependensi:** T-4.1
@@ -501,7 +501,7 @@ Tujuan: Membangun modul input penjualan harian manual, parser in-memory berkas i
     * Upload file contoh Excel yang valid menghasilkan respons 200 OK dengan payload `{"imported_rows": N, "errors": []}`.
     * Upload file Excel dengan format tanggal salah mengembalikan 422 Unprocessable Entity dan daftar nomor baris yang salah.
 
-- [ ] **T-4.3 Domain Sale: Unduh template Excel & Riwayat transaksi latih (`sale/`)**
+- [x] **T-4.3 Domain Sale: Unduh template Excel & Riwayat transaksi latih (`sale/`)**
   * **Ukuran:** S
   * **Rujukan:** TRD 6.2.7; PRD UC-04, PRD UC-10; kode lama `server/routes/data.js`
   * **Dependensi:** T-4.2
@@ -895,4 +895,7 @@ Berikut adalah daftar temuan teknis serta parameter bisnis yang belum ditetapkan
 6. **Metode HTTP Pembaruan Data Master (`PUT` vs `PATCH`) & Filter Batch Aktif (`active_only` vs `status=active`) (Fase 3):**
    * *Kondisi:* TRD 6.2.3 menggunakan metode `PATCH` untuk pembaruan bahan dan TRD 6.2.5 menggunakan query parameter `active_only=true`, sedangkan langkah T-3.1/T-3.2/T-3.3 menggunakan `PUT` dan `status=active`.
    * *Asumsi & Keputusan Implementasi:* Endpoint pembaruan di `ingredient/`, `product/`, dan `event/` didaftarkan untuk menerima `PUT` maupun `PATCH`, dan `GET /api/v1/batches` mendukung filter `active_only=true` maupun `status=active`.
+7. **Struktur Payload `POST /api/v1/sales` & Endpoint Impor Excel (`import-excel` vs `import`) (Fase 4):**
+   * *Kondisi:* TRD 6.2.7.1 mendefinisikan input penjualan dalam bentuk array `items: [{product_id, qty}]` dan TRD 6.2.7.2 mendefinisikan `POST /api/v1/sales/import` (payload JSON `rows`), sedangkan T-4.1 mendefinisikan field tunggal `(product_id, qty, date)` dan T-4.2 mendefinisikan `POST /api/v1/sales/import-excel` (`UploadFile` multipart dengan `openpyxl` in-memory). Selain itu, PRD 4.1.7 menetapkan kuota Freemium `300` transaksi/bulan sementara contoh TRD 6.2.7 menulis `500`.
+   * *Asumsi & Keputusan Implementasi:* `SaleCreateRequest` menerima baik format tunggal `(product_id, qty)` maupun daftar `items`; modul `sale/` menyediakan kedua endpoint `POST /api/v1/sales/import-excel` (`UploadFile` in-memory `openpyxl`) dan `POST /api/v1/sales/import` (JSON `rows`); batas kuota Freemium mengikuti PRD 4.1.7 dan prototipe `server/analytics.js` yaitu `300` transaksi/bulan.
 
