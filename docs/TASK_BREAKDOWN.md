@@ -518,7 +518,7 @@ Tujuan: Membangun modul input penjualan harian manual, parser in-memory berkas i
 ### Fase 5: Domain Algoritma Inti Produk (Forecast, FEFO, & Evaluasi)
 Tujuan: Melakukan porting logika komputasi time-series exponential smoothing, forward simulation FEFO 60 hari, penilaian Waste Risk Score, dan metrik akurasi WAPE ke modul Python murni di `app/lib/`.
 
-- [ ] **T-5.1 Modul pustaka komputasi time-series forecast (`forecast_math.py`)**
+- [x] **T-5.1 Modul pustaka komputasi time-series forecast (`forecast_math.py`)**
   * **Ukuran:** M
   * **Rujukan:** TRD 7.1; PRD UC-08; kode lama `server/forecast.js`
   * **Dependensi:** T-1.1
@@ -534,7 +534,7 @@ Tujuan: Melakukan porting logika komputasi time-series exponential smoothing, fo
   * **Kriteria Selesai:**
     * Modul `src/backend/app/lib/forecast_math.py` bebas dependensi database, dapat diuji via unit test murni, dan mengembalikan rentang ramalan numerik yang presisi.
 
-- [ ] **T-5.2 Modul pustaka inventaris FEFO & simulasi waste 60 hari (`fefo.py`)**
+- [x] **T-5.2 Modul pustaka inventaris FEFO & simulasi waste 60 hari (`fefo.py`)**
   * **Ukuran:** M
   * **Rujukan:** TRD 7.2; PRD UC-06, PRD UC-07; kode lama `server/inventory.js`, `server/analytics.js`
   * **Dependensi:** T-1.1
@@ -551,7 +551,7 @@ Tujuan: Melakukan porting logika komputasi time-series exponential smoothing, fo
   * **Kriteria Selesai:**
     * Fungsi `simulate_fefo_60_days()` menerima list batch dan kebutuhan harian, lalu mengembalikan proyeksi limbah dan klasifikasi risiko secara tepat.
 
-- [ ] **T-5.3 Domain Forecast: Kalkulasi & penayangan proyeksi kebutuhan bahan (`forecast/`)**
+- [x] **T-5.3 Domain Forecast: Kalkulasi & penayangan proyeksi kebutuhan bahan (`forecast/`)**
   * **Ukuran:** M
   * **Rujukan:** TRD 6.2.9, TRD 7.1; PRD UC-05, PRD UC-08; kode lama `server/routes/data.js` (`/api/forecast`)
   * **Dependensi:** T-4.1, T-5.1
@@ -569,7 +569,7 @@ Tujuan: Melakukan porting logika komputasi time-series exponential smoothing, fo
     * Pengguna Freemium meminta `GET /api/v1/forecast?days=7` mendapatkan estimasi rentang (misal: ayam 18–22 kg).
     * Pengguna Freemium meminta `GET /api/v1/forecast?days=14` menerima error 403 Forbidden `ProPlanRequiredException`.
 
-- [ ] **T-5.4 Domain Recommendation: Rekomendasi pembelian safe-buy & Waste Risk Score (`recommendation/`)**
+- [x] **T-5.4 Domain Recommendation: Rekomendasi pembelian safe-buy & Waste Risk Score (`recommendation/`)**
   * **Ukuran:** M
   * **Rujukan:** TRD 6.2.10, TRD 7.2; PRD UC-06, PRD UC-07; kode lama `server/analytics.js` (`/api/recommendations`)
   * **Dependensi:** T-5.2, T-5.3
@@ -587,7 +587,7 @@ Tujuan: Melakukan porting logika komputasi time-series exponential smoothing, fo
   * **Kriteria Selesai:**
     * Kasus uji makalah tervalidasi: kebutuhan ayam 18–22 kg dengan sisa stok 5 kg menghasilkan rekomendasi pembelian bersih 13–17 kg.
 
-- [ ] **T-5.5 Domain Evaluation: Perhitungan metrik WAPE & pelatihan ulang model (`evaluation/`)**
+- [x] **T-5.5 Domain Evaluation: Perhitungan metrik WAPE & pelatihan ulang model (`evaluation/`)**
   * **Ukuran:** M
   * **Rujukan:** TRD 6.2.12; PRD 4.1 poin 6, PRD UC-10; kode lama `server/analytics.js` (`/api/evaluasi`), `server/forecast.js`
   * **Dependensi:** T-5.1, T-5.3
@@ -898,4 +898,19 @@ Berikut adalah daftar temuan teknis serta parameter bisnis yang belum ditetapkan
 7. **Struktur Payload `POST /api/v1/sales` & Endpoint Impor Excel (`import-excel` vs `import`) (Fase 4):**
    * *Kondisi:* TRD 6.2.7.1 mendefinisikan input penjualan dalam bentuk array `items: [{product_id, qty}]` dan TRD 6.2.7.2 mendefinisikan `POST /api/v1/sales/import` (payload JSON `rows`), sedangkan T-4.1 mendefinisikan field tunggal `(product_id, qty, date)` dan T-4.2 mendefinisikan `POST /api/v1/sales/import-excel` (`UploadFile` multipart dengan `openpyxl` in-memory). Selain itu, PRD 4.1.7 menetapkan kuota Freemium `300` transaksi/bulan sementara contoh TRD 6.2.7 menulis `500`.
    * *Asumsi & Keputusan Implementasi:* `SaleCreateRequest` menerima baik format tunggal `(product_id, qty)` maupun daftar `items`; modul `sale/` menyediakan kedua endpoint `POST /api/v1/sales/import-excel` (`UploadFile` in-memory `openpyxl`) dan `POST /api/v1/sales/import` (JSON `rows`); batas kuota Freemium mengikuti PRD 4.1.7 dan prototipe `server/analytics.js` yaitu `300` transaksi/bulan.
+8. **Kontrak domain algoritma Fase 5 yang berbeda antara rincian tugas dan TRD:**
+   * *Kondisi:* T-5.5 menyebut `POST /api/v1/evaluation/retrain`, sedangkan TRD 6.2.12 menetapkan `/api/v1/evaluation/train`. Bentuk respons ringkas di T-5.3/T-5.4/T-5.5 juga berbeda dari contoh payload rinci TRD 6.2.9/6.2.10/6.2.12.
+   * *Asumsi & Keputusan Implementasi:* Mengikuti kontrak TRD yang rinci: endpoint `/train` dan struktur payload contoh pada TRD. Rentang numerik forecast tetap disajikan dalam `need_lo`/`need_hi` sesuai contoh TRD.
+9. **Penyebut untuk rasio risiko limbah:**
+   * *Kondisi:* TRD 7.2 menyebut `Waste Value / (Stok Tersedia + Rencana Beli)` tanpa mendefinisikan unit nilai penyebut; penjumlahan nilai uang dengan kuantitas stok tidak berdimensi konsisten.
+   * *Asumsi & Keputusan Implementasi:* Gunakan nilai stok moneter (kuantitas batch × harga satuan) ditambah nilai rencana beli moneter sebagai penyebut, agar rasio dapat dibandingkan dengan ambang persentase 10% dan 30%. Jika penyebut nilai moneter bernilai 0 (mis. unit price 0), fallback ke rasio kuantitas (`waste_qty / (stock_qty + planned_buy)`).
+10. **Horizon Adaptif Pembelian Bahan Baku (`segar` vs `tahan_lama`):**
+    * *Kondisi:* PRD UC-05 menetapkan periode adaptif (harian untuk segar, mingguan/bulanan untuk tahan lama).
+    * *Asumsi & Keputusan Implementasi:* Mengikuti prototipe `server/analytics.js`: endpoint rekomendasi pembelian menghitung kebutuhan 1 hari ($T+1$) untuk bahan segar (`segar`), 30 hari untuk bahan sangat tahan lama ($\ge 90$ hari), dan 7 hari untuk bahan standar. Skema forecast juga mengembalikan field `category`.
+11. **Agregasi Interval Kepercayaan Kebutuhan Bahan Baku (`need_lo` & `need_hi`):**
+    * *Kondisi:* TRD tidak merinci formula agregasi rentang estimasi kebutuhan bahan lintas menu resep.
+    * *Asumsi & Keputusan Implementasi:* Mengikuti prototipe `server/forecast.js`: varians kesalahan diakumulasi secara kuadratik $\sum (\text{half} \times \text{qty})^2$ dan diakarkan $sd = \sqrt{\text{var}}$, menghasilkan interval $[need - sd, need + sd]$ yang konsisten dan akurat.
+12. **Perhitungan Metrik `accuracy_prev` & Alias Route `/retrain`:**
+    * *Kondisi:* TRD 6.2.12 memuat field `accuracy_prev`, namun skema `model_state` hanya menyimpan satu WAPE terkini. Tugas T-5.5 juga menyebut `/retrain` sementara TRD menyebut `/train`.
+    * *Asumsi & Keputusan Implementasi:* `accuracy_prev` dihitung secara dinamis dari jendela 28 hari sebelumnya ($T-56$ s.d. $T-28$) jika riwayat aktif mencukupi, dan router mendaftarkan kedua endpoint `POST /api/v1/evaluation/train` dan `POST /api/v1/evaluation/retrain`.
 
