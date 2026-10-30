@@ -410,7 +410,7 @@ Tujuan: Membangun modul manajemen master bahan baku, takaran resep menu produk, 
   * **Kriteria Selesai:**
     * `POST /api/v1/products` berhasil menyimpan produk "Ayam Bakar Madu" beserta 2 bahan resepnya dalam tabel `recipes`.
 
-- [ ] **T-3.3 Domain Batch: Pencatatan stok masuk FEFO & daftar batch aktif (`batch/`)**
+- [x] **T-3.3 Domain Batch: Pencatatan stok masuk FEFO & daftar batch aktif (`batch/`)**
   * **Ukuran:** M
   * **Rujukan:** TRD 5, TRD 6.2.5; PRD UC-03; kode lama `server/routes/data.js` (`/api/batches`), `server/inventory.js`
   * **Dependensi:** T-3.1
@@ -428,7 +428,7 @@ Tujuan: Membangun modul manajemen master bahan baku, takaran resep menu produk, 
     * Eksekusi `POST /api/v1/batches` berhasil mencatat batch baru.
     * Kueri `GET /api/v1/batches` mengembalikan daftar batch yang berurutan dari kedaluwarsa terdekat.
 
-- [ ] **T-3.4 Domain Waste Log: Pencatatan manual bahan terbuang/rusak (`waste_log/`)**
+- [x] **T-3.4 Domain Waste Log: Pencatatan manual bahan terbuang/rusak (`waste_log/`)**
   * **Ukuran:** S
   * **Rujukan:** TRD 5, TRD 6.2.6; PRD UC-03; kode lama `server/routes/data.js` (`/api/waste`)
   * **Dependensi:** T-3.1
@@ -444,7 +444,7 @@ Tujuan: Membangun modul manajemen master bahan baku, takaran resep menu produk, 
   * **Kriteria Selesai:**
     * Eksekusi `POST /api/v1/waste-logs` berhasil mencatat log limbah 2 kg ayam dan tersimpan di database.
 
-- [ ] **T-3.5 Domain Event: Master hari khusus & multiplier dampak penjualan (`event/`)**
+- [x] **T-3.5 Domain Event: Master hari khusus & multiplier dampak penjualan (`event/`)**
   * **Ukuran:** S
   * **Rujukan:** TRD 5, TRD 6.2.8; PRD UC-08; kode lama `server/routes/data.js` (`/api/events`)
   * **Dependensi:** T-2.6
@@ -889,4 +889,10 @@ Berikut adalah daftar temuan teknis serta parameter bisnis yang belum ditetapkan
 4. **Kebijakan Default Pembulatan Rekomendasi Belanja Bahan:**
    * *Kondisi:* Beberapa bahan baku dibeli dalam kelipatan satuan tertentu (misal: telur per kg atau per butir, bumbu per pack).
    * *Usulan Teknis:* Rekomendasi pembelian safe-buy dibulatkan ke atas (*ceil*) pada 1 digit desimal terdekat atau mengikuti unit terkecil bahan di master data.
+5. **Konsistensi Nama Field Komposisi Resep (`recipe` vs `recipes`) pada Domain Product (Fase 3):**
+   * *Kondisi:* TRD 6.2.4 mendefinisikan properti komposisi bahan dengan nama `recipe`, sedangkan rincian langkah T-3.2 di dokumen ini menggunakan nama `recipes`.
+   * *Asumsi & Keputusan Implementasi:* Skema request dan response pada `src/backend/app/api/product/schema.py` menerima kedua nama field (`recipe` dan `recipes`) serta mengembalikan keduanya pada respons agar kompatibel penuh dengan kontrak TRD 6.2.4 maupun pengujian T-3.2.
+6. **Metode HTTP Pembaruan Data Master (`PUT` vs `PATCH`) & Filter Batch Aktif (`active_only` vs `status=active`) (Fase 3):**
+   * *Kondisi:* TRD 6.2.3 menggunakan metode `PATCH` untuk pembaruan bahan dan TRD 6.2.5 menggunakan query parameter `active_only=true`, sedangkan langkah T-3.1/T-3.2/T-3.3 menggunakan `PUT` dan `status=active`.
+   * *Asumsi & Keputusan Implementasi:* Endpoint pembaruan di `ingredient/`, `product/`, dan `event/` didaftarkan untuk menerima `PUT` maupun `PATCH`, dan `GET /api/v1/batches` mendukung filter `active_only=true` maupun `status=active`.
 
