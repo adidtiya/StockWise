@@ -4,6 +4,7 @@ from fastapi import APIRouter
 
 from app.api.auth.views import router as auth_router
 from app.api.batch.views import router as batch_router
+from app.api.dashboard.views import router as dashboard_router
 from app.api.event.views import router as event_router
 from app.api.evaluation.views import router as evaluation_router
 from app.api.forecast.views import router as forecast_router
@@ -28,3 +29,4 @@ api_router.include_router(sale_router, prefix="/sales", tags=["Sales"])
 api_router.include_router(forecast_router, prefix="/forecast", tags=["Forecast"])
 api_router.include_router(recommendation_router, prefix="/recommendations", tags=["Recommendations"])
 api_router.include_router(evaluation_router, prefix="/evaluation", tags=["Evaluation"])
+api_router.include_router(dashboard_router, prefix="/dashboard", tags=["Dashboard"])

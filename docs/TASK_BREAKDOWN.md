@@ -613,7 +613,7 @@ Tujuan: Melakukan porting logika komputasi time-series exponential smoothing, fo
 ### Fase 6: Domain Dashboard Inventaris
 Tujuan: Membangun modul analitik ringkasan operasional harian yang mengagregasikan grafik tren penjualan, pergerakan stok bahan, dan perhitungan otomatis sisa porsi menu yang dapat dibuat.
 
-- [ ] **T-6.1 Domain Dashboard: Agregasi metrik, grafik tren penjualan, & kapasitas porsi (`dashboard/`)**
+- [x] **T-6.1 Domain Dashboard: Agregasi metrik, grafik tren penjualan, & kapasitas porsi (`dashboard/`)**
   * **Ukuran:** M
   * **Rujukan:** TRD 6.2.11; PRD UC-09; kode lama `server/routes/data.js` (`/api/dashboard`)
   * **Dependensi:** T-4.1, T-5.4
@@ -914,3 +914,8 @@ Berikut adalah daftar temuan teknis serta parameter bisnis yang belum ditetapkan
     * *Kondisi:* TRD 6.2.12 memuat field `accuracy_prev`, namun skema `model_state` hanya menyimpan satu WAPE terkini. Tugas T-5.5 juga menyebut `/retrain` sementara TRD menyebut `/train`.
     * *Asumsi & Keputusan Implementasi:* `accuracy_prev` dihitung secara dinamis dari jendela 28 hari sebelumnya ($T-56$ s.d. $T-28$) jika riwayat aktif mencukupi, dan router mendaftarkan kedua endpoint `POST /api/v1/evaluation/train` dan `POST /api/v1/evaluation/retrain`.
 
+13. **Kontrak payload Dashboard (T-6.1) berbeda dari TRD 6.2.11:**
+    * *Kondisi:* T-6.1 menyebut blok `summary`, `sales_trend`, `stock_movement`, `product_capacities`, sedangkan TRD 6.2.11 menetapkan `date`, `counts`, `waste`, `risk`, `buy`, `portions`. PRD UC-09 juga menyebut grafik penjualan dan pergerakan stok, yang tidak ada di payload TRD.
+    * *Asumsi & Keputusan Implementasi:* Mengikuti TRD persis (aturan "ikuti TRD"). Blok `sales_trend` dan `stock_movement` tidak dibuat; bila grafik diperlukan frontend, perlu keputusan menambah blok atau endpoint terpisah.
+14. **Definisi perhitungan Dashboard yang tidak dirinci TRD:**
+    * *Asumsi & Keputusan Implementasi:* `waste.*_cost` = Σ(qty waste_logs × `ingredients.price`) per bulan kalender (WIB), `reduction_percentage` = (prev − cur)/prev × 100 (0 bila prev = 0); `risk.high/medium` dari level `tinggi/sedang` hasil rekomendasi, `low` = sisa bahan; `buy` dari item berstatus `beli` (jumlah dan Σ`buy_cost`); `history_days` = jumlah tanggal penjualan berbeda; `remaining_portions` = min(⌊stok layak pakai / takaran⌋) di seluruh bahan resep produk aktif (0 bila tanpa resep). Bila riwayat < 14 hari (rekomendasi tidak tersedia), risk/buy bernilai 0 dan `low` = jumlah bahan.
