@@ -13,6 +13,21 @@ Sebelum menjalankan aplikasi, pastikan perangkat Anda telah terpasang:
 - **Python 3.11+** (opsional pada host, digunakan untuk menjalankan server statis frontend dan pengujian lokal).
 - **Peramban Web Modern** (Google Chrome, Mozilla Firefox, Safari, atau Microsoft Edge).
 
+### Panduan Singkat Instalasi Docker Desktop
+Situs resmi Docker: [Docker Desktop Overview](https://www.docker.com/products/docker-desktop/)
+
+- **macOS:**
+  1. Unduh installer melalui [Docker Desktop for Mac](https://docs.docker.com/desktop/setup/install/mac-install/) (pilih versi *Apple Silicon* atau *Intel Chip* sesuai perangkat).
+  2. Buka berkas `.dmg` hasil unduhan, lalu seret ikon Docker ke folder **Applications**.
+  3. Buka Docker Desktop dari Launchpad/Applications dan ikuti instruksi hingga status Docker menunjukkan *Engine running*.
+  *(Opsi alternatif via Homebrew)*: jalankan `brew install --cask docker`.
+
+- **Windows:**
+  1. Pastikan fitur WSL 2 telah aktif (buka PowerShell sebagai Administrator dan jalankan `wsl --install`).
+  2. Unduh installer melalui [Docker Desktop for Windows](https://docs.docker.com/desktop/setup/install/windows-install/).
+  3. Jalankan berkas `Docker Desktop Installer.exe`, pastikan opsi **Use WSL 2 instead of Hyper-V** tercentang, lalu ikuti proses hingga selesai.
+  4. Lakukan *restart* komputer jika diminta, kemudian buka aplikasi Docker Desktop dan pastikan engine dalam status *running*.
+
 ---
 
 ## 2. Daftar Port yang Digunakan
