@@ -6,6 +6,27 @@ StockWise adalah aplikasi web (*mobile-first* / Progressive Web App) yang diranc
 
 ---
 
+## Tautan Akses Layanan & Web UI (Quick Access)
+
+Setelah seluruh layanan dijalankan, Anda dapat langsung mengakses antarmuka aplikasi, dokumentasi API, dan basis data melalui tautan berikut:
+
+| Antarmuka / Layanan | Tautan Akses | Keterangan |
+|---|---|---|
+| 🌐 **Frontend Web App (PWA)** | [http://localhost:5173](http://localhost:5173) | Aplikasi web utama UMKM StockWise |
+| 📖 **Swagger UI (OpenAPI)** | [http://localhost:8000/docs](http://localhost:8000/docs) | Dokumentasi interaktif & uji coba endpoint REST API |
+| 📑 **ReDoc API** | [http://localhost:8000/redoc](http://localhost:8000/redoc) | Dokumentasi spesifikasi API alternatif |
+| 🩺 **Health Check Endpoint** | [http://localhost:8000/api/v1/health](http://localhost:8000/api/v1/health) | Pemeriksaan kesiapan server backend & basis data |
+| 🗄️ **Database Web UI (Adminer)** | [http://localhost:8080](http://localhost:8080) | Antarmuka browser visual PostgreSQL (lihat tabel, batch & transaksi) |
+| 🔌 **Koneksi Database Langsung (GUI)** | `localhost:5432` | Akses langsung client desktop (DBeaver, TablePlus, pgAdmin) |
+
+> [!TIP]
+> **Kredensial Akses Cepat:**
+> - **Akun Demo Web App:** Email: `demo@stockwise.id` \| Sandi: `Demo1234!`
+> - **Database Web UI (Adminer):** Sistem: `PostgreSQL` \| Server: `db` \| Pengguna: `stockwise_user` \| Sandi: `stockwise_password` \| Basis data: `stockwise_db`
+> - **Koneksi Client Desktop (DBeaver/TablePlus):** Host: `localhost` \| Port: `5432` \| User: `stockwise_user` \| Sandi: `stockwise_password` \| Database: `stockwise_db`
+
+---
+
 ## 1. Prasyarat Sistem
 
 Sebelum menjalankan aplikasi, pastikan perangkat Anda telah terpasang:
@@ -36,6 +57,7 @@ Situs resmi Docker: [Docker Desktop Overview](https://www.docker.com/products/do
 |---|---|---|
 | **5173** | Frontend Web App (PWA) | Server HTTP statis Vanilla JS (`http://localhost:5173`) |
 | **8000** | Backend API (FastAPI) | Layanan REST API & Swagger UI (`http://localhost:8000/docs`) |
+| **8080** | Database Web UI (Adminer) | Antarmuka browser visual PostgreSQL (`http://localhost:8080`) |
 | **5432** | Database PostgreSQL 16 | Basis data relasional penyimpanan transaksi dan inventaris |
 
 ---
