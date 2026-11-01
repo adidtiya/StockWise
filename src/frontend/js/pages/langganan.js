@@ -118,6 +118,9 @@ export const langganan = {
               ${!isPro ? html`<span class="badge brand">Paket Kamu</span>` : ''}
             </div>
             <div class="price">Rp0 <small>/ selamanya</small></div>
+            <div class="badge neutral xs" style="align-self:flex-start;gap:4px">
+              Paket Dasar UMKM
+            </div>
             <p class="small muted">Untuk UMKM yang masih mencatat penjualan harian secara manual atau dengan Excel.</p>
             ${features(FREE)}
           </div>
@@ -128,11 +131,14 @@ export const langganan = {
               ${isPro ? html`<span class="badge pro">Paket Kamu</span>` : html`<span class="badge pro">Populer</span>`}
             </div>
             <div class="price">${rupiah(sub.price_monthly || 100000)} <small>/ bulan</small></div>
+            <div class="badge info xs" style="align-self:flex-start;gap:4px">
+              ${icon('info')}Pembayaran Simulasi (Tanpa Biaya Riil)
+            </div>
             <p class="small muted">Untuk usaha dengan transaksi tinggi yang ingin otomatisasi sinkronisasi POS dan aplikasi pesan antar.</p>
             ${features(PRO)}
             ${isPro
               ? html`<button class="btn btn-secondary" id="cancel">Berhenti Berlangganan</button>`
-              : html`<button class="btn btn-lg" id="upgrade">${icon('crown')}Tingkatkan ke Pro</button>`}
+              : html`<button class="btn btn-lg" id="upgrade">${icon('crown')}Tingkatkan ke Pro (Simulasi)</button>`}
           </div>
         </div>
 
@@ -245,36 +251,51 @@ export const integrasi = {
               </div>
             </div>`}
 
-        <div class="card">
-          <div class="list" id="providers-list">
-            ${providers.map((p) => {
-              const pId = p.name;
-              const pLabel = p.label || p.name;
-              const logo = LOGO[pId] || ['#0F766E', pLabel.slice(0, 2).toUpperCase()];
+        <div class="grid grid-2" id="providers-grid">
+          ${providers.map((p) => {
+            const pId = p.name;
+            const pLabel = p.label || p.name;
+            const logo = LOGO[pId] || ['#0F766E', pLabel.slice(0, 2).toUpperCase()];
 
-              return html`<div class="list-item" data-provider="${pId}">
-                <div class="provider-logo" style="background:${logo[0]};color:#fff;width:40px;height:40px;border-radius:10px;display:grid;place-items:center;font-weight:700">
-                  ${logo[1]}
-                </div>
-                <div class="grow">
-                  <div class="title">${pLabel}</div>
-                  <div class="meta">
-                    ${p.connected
-                      ? `Terhubung · Sinkron terakhir: ${p.last_sync ? dateTime(p.last_sync) : 'Belum pernah'}`
-                      : 'Belum terhubung'}
+            return html`<div class="card stack-sm" data-provider="${pId}" style="height:100%;display:flex;flex-direction:column;justify-content:space-between">
+              <div class="stack-sm">
+                <div class="row-between" style="align-items:flex-start">
+                  <div class="row" style="gap:10px;align-items:center">
+                    <div class="provider-logo" style="background:${logo[0]};color:#fff;width:40px;height:40px;border-radius:10px;display:grid;place-items:center;font-weight:700">
+                      ${logo[1]}
+                    </div>
+                    <div>
+                      <h3 style="font-size:16px;margin:0">${pLabel}</h3>
+                      <span class="xs muted">Otomasi Transaksi</span>
+                    </div>
                   </div>
+                  ${p.connected
+                    ? html`<span class="badge ok dot">Terhubung</span>`
+                    : html`<span class="badge muted">Belum Terhubung</span>`}
                 </div>
-                ${p.connected
-                  ? html`<span class="badge ok dot">Terhubung</span>
-                      <button class="btn btn-primary btn-sm sync-btn" data-sync="${pId}">
+                <p class="small muted" style="min-height:36px;margin-top:4px">
+                  ${p.connected
+                    ? `Sinkron terakhir: ${p.last_sync ? dateTime(p.last_sync) : 'Belum pernah'}`
+                    : 'Tarik data pesanan otomatis langsung ke riwayat dan model peramalan.'}
+                </p>
+              </div>
+
+              <div class="stack-xs" style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
+                ${!isPro
+                  ? html`<button class="btn btn-secondary btn-sm" disabled style="width:100%">
+                        ${icon('lock')}Sinkronkan (Khusus Pro)
+                      </button>
+                      <span class="xs muted center" style="display:block">Perlu paket Pro untuk integrasi ini</span>`
+                  : p.connected
+                  ? html`<button class="btn btn-primary btn-sm sync-btn" data-sync="${pId}" style="width:100%">
                         ${icon('refresh')}Sinkronkan Sekarang
                       </button>`
-                  : html`<button class="btn btn-secondary btn-sm connect-btn" data-connect="${pId}" ${isPro ? '' : 'disabled'}>
-                      ${isPro ? 'Hubungkan' : html`${icon('lock')}Pro`}
-                    </button>`}
-              </div>`;
-            })}
-          </div>
+                  : html`<button class="btn btn-secondary btn-sm connect-btn" data-connect="${pId}" style="width:100%">
+                        Hubungkan Layanan
+                      </button>`}
+              </div>
+            </div>`;
+          })}
         </div>
 
         <div class="callout info">

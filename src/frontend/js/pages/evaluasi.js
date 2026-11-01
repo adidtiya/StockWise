@@ -135,6 +135,7 @@ export default {
       if (trainBtn) {
         trainBtn.onclick = async () => {
           trainBtn.disabled = true;
+          trainBtn.classList.add('loading');
           trainBtn.textContent = 'Melatih...';
           try {
             const res = await api('/evaluation/train', { method: 'POST' });
@@ -143,6 +144,7 @@ export default {
           } catch (err) {
             toast(err.message, 'error');
             trainBtn.disabled = false;
+            trainBtn.classList.remove('loading');
             trainBtn.innerHTML = `${icon('refresh')}Latih Ulang Model`;
           }
         };

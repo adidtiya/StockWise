@@ -133,11 +133,15 @@ function navLink([id, label, ico, proOnly]) {
 function renderShell() {
   root.innerHTML = html`
     <div class="app">
+      <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
       <aside class="sidebar">
-        <a class="brand" href="#/dashboard" style="text-decoration:none;color:inherit">
-          <img src="/img/logo.png" alt="" />
-          <div><b>StockWise</b><small>Stock smart, waste less</small></div>
-        </a>
+        <div class="brand-wrap">
+          <a class="brand" href="#/dashboard" style="text-decoration:none;color:inherit">
+            <img src="/img/logo.png" alt="" />
+            <div><b>StockWise</b><small>Stock smart, waste less</small></div>
+          </a>
+          <button class="icon-btn plain mobile-close" id="sidebar-close-btn" aria-label="Tutup menu">${icon('x')}</button>
+        </div>
         <nav>
           ${NAV.map((g) => html`<div class="nav-group"><span>${g.group}</span>${g.items.map(navLink)}</div>`)}
         </nav>
@@ -145,6 +149,7 @@ function renderShell() {
       </aside>
       <div class="main">
         <header class="topbar" id="topbar">
+          <button class="icon-btn plain menu-toggle" id="menu-btn" aria-label="Buka menu">${icon('menu')}</button>
           <button class="icon-btn plain back" id="back-btn" aria-label="Kembali">${icon('chevronLeft')}</button>
           <img class="mobile-logo" id="mobile-logo" src="/img/logo.png" alt="" />
           <h1 id="page-title"></h1>
@@ -164,6 +169,34 @@ function renderShell() {
   document.getElementById('fab').onclick = openQuickActions;
   const topbar = document.getElementById('topbar');
   window.addEventListener('scroll', () => topbar.classList.toggle('scrolled', window.scrollY > 4), { passive: true });
+
+  const menuBtn = document.getElementById('menu-btn');
+  const sidebar = document.querySelector('.sidebar');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  const closeBtn = document.getElementById('sidebar-close-btn');
+
+  const closeMenu = () => {
+    sidebar?.classList.remove('open');
+    backdrop?.classList.remove('open');
+  };
+  const openMenu = () => {
+    sidebar?.classList.add('open');
+    backdrop?.classList.add('open');
+  };
+
+  menuBtn?.addEventListener('click', () => {
+    if (sidebar?.classList.contains('open')) closeMenu();
+    else openMenu();
+  });
+  closeBtn?.addEventListener('click', closeMenu);
+  backdrop?.addEventListener('click', closeMenu);
+
+  sidebar?.addEventListener('click', (e) => {
+    if (e.target.closest('a') && window.innerWidth <= 960) {
+      closeMenu();
+    }
+  });
+
   renderShellChrome();
 }
 
@@ -215,6 +248,8 @@ async function route() {
     return;
   }
   if (!state.shell) renderShell();
+  document.querySelector('.sidebar')?.classList.remove('open');
+  document.getElementById('sidebar-backdrop')?.classList.remove('open');
   document.querySelectorAll('[data-nav]').forEach((a) => a.classList.toggle('active', a.dataset.nav === r.nav));
   const title = typeof r.page.title === 'function' ? r.page.title(ctx) : r.page.title;
   document.getElementById('page-title').textContent = title;

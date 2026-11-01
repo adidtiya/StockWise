@@ -102,10 +102,21 @@ export const dateShort = (s) => fmt({ day: 'numeric', month: 'short' }).format(d
 export const dayName = (s) => fmt({ weekday: 'short' }).format(d0(s));
 export const monthShort = (s) => fmt({ month: 'short' }).format(d0(s));
 export const dayNum = (s) => d0(s).getUTCDate();
-export const dateTime = (s) =>
-  new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' }).format(
-    new Date(String(s).replace(' ', 'T') + (String(s).includes('Z') ? '' : 'Z'))
-  );
+export const dateTime = (s) => {
+  if (!s) return '–';
+  const str = String(s).replace(' ', 'T');
+  const hasTz = /[Zz]|[+-]\d{2}(:?\d{2})?$/.test(str);
+  const d = new Date(hasTz ? str : str + 'Z');
+  if (isNaN(d.getTime())) return String(s);
+  return new Intl.DateTimeFormat('id-ID', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Asia/Jakarta',
+  }).format(d);
+};
 export function todayStr() {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date());
 }

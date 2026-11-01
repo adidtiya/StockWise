@@ -110,15 +110,15 @@ Setiap kombinasi halaman dan viewport telah ditinjau dan disimpan ke dalam direk
 
 ---
 
-## 5. Tabel Temuan Audit (Daftar Masalah Tampilan)
+## 5. Tabel Temuan Audit & Status Akhir Perbaikan
 
-| ID | Halaman | Lebar Layar | Tingkat | Deskripsi Temuan yang Terlihat | Bukti Tangkapan Layar | Dugaan Akar Masalah |
-|---|---|---|---|---|---|---|
-| **U-01** | Beranda (Akun Kosong / Onboarding Checklist) | 1280, 768, 390 px | **Kritis** | **Ikon chevron raksasa:** Ikon `chevronRight` pada kartu checklist onboarding membesar raksasa hingga 870 px di desktop, 634 px di tablet, dan 256 px di ponsel, menutupi kartu. | `t91_empty_dashboard_1280.png`<br>`t91_empty_dashboard_768.png`<br>`t91_empty_dashboard_390.png` | `src/frontend/css/style.css:54`<br>`src/frontend/css/style.css:235-242`<br>`src/frontend/js/ui.js:72-76` |
-| **U-02** | Beranda (Akun Kosong / Onboarding Checklist) | 1280, 768, 390 px | **Kritis** | **Teks deskripsi terjepit & judul hilang:** Teks deskripsi langkah orientasi ("Nama, satuan, kategori segar / tahan lama, dan umur simpan.") tertekan menjadi kolom vertikal sempit (lebar 0–50 px), huruf/kata bertumpuk ke bawah, dan judul langkah ("Daftarkan bahan baku") tidak terlihat karena terpotong `overflow: hidden`. | `t91_empty_dashboard_1280.png`<br>`t91_empty_dashboard_768.png`<br>`t91_empty_dashboard_390.png`<br>Data inspeksi `checklistDetail` di `audit_data.json` | `src/frontend/css/style.css:143`<br>`src/frontend/css/style.css:235-240`<br>(Berakar sama dengan **U-01**) |
-| **U-03** | Stok & Bahan Baku (Tabel Master) | 390 px | **Tinggi** | **Teks panjang pada sel tabel sempit:** Kolom bahan baku terhimpit oleh 5 kolom lain pada layar ponsel (lebar sel 84 px < 120 px) sehingga teks subtitle `div.xs.muted` ("Rp18.000/liter · simpan 180 hari", 32 karakter) terpotong/terlalu padat. | `t91_bahan_390.png`<br>Hasil `ui_check.js`: `td > div.xs.muted` (width: 84 px) | `src/frontend/css/style.css:244-250`<br>`src/frontend/js/pages/bahan.js:145-165` |
-| **U-04** | Global (Elemen Ikon SVG) | Semua Halaman | **Tinggi** | **Ketiadaan ukuran dasar bawaan SVG:** Fungsi `icon()` menghasilkan elemen `<svg>` inline tanpa atribut `width` dan `height`. Pada CSS, aturan global untuk SVG hanya `img, svg { display: block; }` tanpa dimensi default (`width` / `height` / `flex-shrink`). Setiap SVG yang tidak memiliki selector CSS spesifik akan melar bebas mengikuti flexbox container. | Kode `src/frontend/js/ui.js:74`<br>`src/frontend/css/style.css:54` | `src/frontend/css/style.css:54`<br>`src/frontend/js/ui.js:72-76` |
-| **U-05** | Global (Pola Flex Baris Berisi Ikon) | Semua Halaman | **Sedang** | **Pola flex `.list-item` tidak mengunci ukuran ikon samping:** Selector `.list-item > svg` tidak didefinisikan dengan `width: 20px; height: 20px; flex: none;`, sehingga elemen saudaranya (`.grow { flex: 1; min-width: 0; }`) kehilangan ruang fleksibelnya saat berdampingan dengan SVG bebas. | `src/frontend/css/style.css:235-242` | `src/frontend/css/style.css:235` |
+| ID | Halaman | Lebar Layar | Tingkat | Deskripsi Temuan yang Terlihat | Status Akhir | Bukti Sebelum vs Sesudah Perbaikan | Akar Masalah & Solusi File CSS/JS |
+|---|---|---|---|---|---|---|---|
+| **U-01** | Beranda (Akun Kosong / Onboarding Checklist) | 1280, 768, 390 px | **Kritis** | **Ikon chevron raksasa:** Ikon `chevronRight` pada kartu checklist onboarding membesar hingga 870 px di desktop, menutupi kartu. | **SELESAI** | *Sebelum:* `t91_empty_dashboard_1280.png`<br>*Sesudah:* `t910_empty_dashboard_1280.png`, `t910_empty_dashboard_768.png`, `t910_empty_dashboard_390.png` (chevron terkunci tepat 20 px). | `src/frontend/css/style.css:54` dan baris 248: aturan bawaan `svg { width: 1.25rem; height: 1.25rem; flex-shrink: 0; }` dan `.list-item > svg { width: 20px; height: 20px; flex: none; }`. |
+| **U-02** | Beranda (Akun Kosong / Onboarding Checklist) | 1280, 768, 390 px | **Kritis** | **Teks deskripsi terjepit & judul hilang:** Teks deskripsi langkah orientasi tertekan menjadi kolom vertikal sempit dan judul langkah terpotong habis. | **SELESAI** | *Sebelum:* `t91_empty_dashboard_1280.png` (lebar .grow 0 px)<br>*Sesudah:* `t910_empty_dashboard_1280.png` (judul terbaca tebal, deskripsi lebar > 200 px). | Berakar sama dengan **U-01**; diselesaikan lewat perbaikan flexbox dan ukuran chevron di `style.css`. |
+| **U-03** | Stok & Bahan Baku (Tabel Master) | 390 px | **Tinggi** | **Teks panjang pada sel tabel sempit:** Kolom bahan baku terhimpit pada layar ponsel sehingga teks subtitle sempit (84 px). | **SELESAI** | *Sebelum:* `t91_bahan_390.png` (84 px)<br>*Sesudah:* `t910_bahan_390.png` (kolom pertama `min-width: 160px`, tabel `min-width: 640px` dengan scroll kontainer mandiri). | `src/frontend/css/style.css:262-270`: kontainer `.table-wrap` diberi scroll horizontal mandiri dengan proteksi lebar minimum sel pertama. |
+| **U-04** | Global (Elemen Ikon SVG) | Semua Halaman | **Tinggi** | **Ketiadaan ukuran dasar bawaan SVG:** Fungsi `icon()` menghasilkan elemen `<svg>` inline tanpa pembatasan ukuran CSS global. | **SELESAI** | *Sebelum:* SVG tanpa class melar mengikuti container.<br>*Sesudah:* `svg { width: 1.25rem; height: 1.25rem; flex-shrink: 0; }` diterapkan global. 0 temuan SVG > 64 px di seluruh 14 halaman. | `src/frontend/css/style.css:54`. |
+| **U-05** | Global (Pola Flex Baris Berisi Ikon) | Semua Halaman | **Sedang** | **Pola flex `.list-item` tidak mengunci ukuran ikon samping:** Selector `.list-item > svg` tidak mengunci ukuran ikon anak langsung. | **SELESAI** | *Sebelum:* Ikon chevron menekan elemen saudaranya.<br>*Sesudah:* `.list-item > svg { width: 20px; height: 20px; flex: none; }` diterapkan. | `src/frontend/css/style.css:248-255`. |
 
 ---
 
@@ -198,4 +198,50 @@ Perbaikan harus dilakukan di **lapisan inti CSS terpusat (`src/frontend/css/styl
 4. [x] Seluruh dialog modal utama (Quick Actions FAB, Tambah Bahan, Tambah Menu, Tambah Event, Feedback) telah dibuka dan ditinjau tangkapan layarnya.
 5. [x] Analisis akar masalah teknis untuk chevron raksasa dan teks terjepit telah dibuktikan secara mekanis (berakar sama).
 6. [x] Dokumen `docs/UI_AUDIT.md` telah memuat seluruh data temuan, bukti screenshot, dan rujukan file/baris kode.
-7. [x] **Lapisan frontend `src/frontend/` sama sekali tidak disentuh atau diubah** selama pengerjaan T-9.1.
+---
+
+## 9. Hasil Verifikasi Akhir T-9.10 (Seluruh Halaman, Viewport, & Akun)
+
+Pengujian penutup Fase 9 dijalankan menggunakan skrip verifikasi otomatis `tests/e2e/verify_t910.mjs` yang menguji 14 halaman pada 3 ukuran viewport (1280, 768, 390 px) untuk Akun A (berisi data) dan Akun B (empty states).
+
+### 9.1 Matriks ui_check.js Final (Akun A)
+
+| No | Halaman | Lebar 1280 px | Lebar 768 px | Lebar 390 px | Status Console Error | Status ui_check |
+|:--:|---|:---:|:---:|:---:|:---:|:---:|
+| 1 | `#/dashboard` (Beranda) | 0 | 0 | 0 | Bersih (0) | Lulus |
+| 2 | `#/bahan` (Stok & Bahan) | 0 | 0 | 0 | Bersih (0) | Lulus |
+| 3 | `#/menu` (Menu & Resep) | 0 | 0 | 0 | Bersih (0) | Lulus |
+| 4 | `#/event` (Event & Hari Khusus) | 0 | 0 | 0 | Bersih (0) | Lulus |
+| 5 | `#/penjualan` (Input Penjualan) | 0 | 0 | 0 | Bersih (0) | Lulus |
+| 6 | `#/import` (Import Excel) | 0 | 0 | 0 | Bersih (0) | Lulus |
+| 7 | `#/riwayat` (Riwayat Transaksi) | 0 | 0 | 0 | Bersih (0) | Lulus |
+| 8 | `#/forecast` (Forecast Kebutuhan) | 0 | 0 | 0 | Bersih (0) | Lulus |
+| 9 | `#/rekomendasi` (Rekomendasi Belanja) | 0 | 0 | 0 | Bersih (0) | Lulus |
+| 10 | `#/evaluasi` (Evaluasi Akurasi) | 0 | 0 | 0 | Bersih (0) | Lulus |
+| 11 | `#/langganan` (Paket & Langganan) | 0 | 0 | 0 | Bersih (0) | Lulus |
+| 12 | `#/integrasi` (Sinkronisasi API) | 0 | 0 | 0 | Bersih (0) | Lulus |
+| 13 | `#/profil` (Profil Pengguna) | 0 | 0 | 0 | Bersih (0) | Lulus |
+| 14 | `#/feedback` (Feedback Pengguna) | 0 | 0 | 0 | Bersih (0) | Lulus |
+
+*Total Temuan Akun A:* **0 temuan** di seluruh kombinasi halaman dan viewport.
+
+### 9.2 Empty State Check (Akun B)
+* `#/dashboard` (Onboarding Checklist pada 1280, 768, 390 px): **0 temuan**, chevron 20 px, judul tebal terlihat, deskripsi lebar > 200 px.
+* `#/bahan` (Empty State 1280 px): **0 temuan**.
+* `#/menu` (Empty State 1280 px): **0 temuan**.
+* `#/riwayat` (Empty State 1280 px): **0 temuan**.
+* `#/forecast` (Empty State 1280 px): **0 temuan**.
+* `#/rekomendasi` (Empty State 1280 px): **0 temuan**.
+* `#/evaluasi` (Empty State 1280 px): **0 temuan**.
+
+### 9.3 Bukti Dua Skenario Sesi Autentikasi
+1. **Skenario Sesi 1 (Cookie HttpOnly & Storage Bersih):**
+   * *Bukti:* `tests/e2e/artifacts/t910_session_httponly_cookies.png`
+   * *Hasil Evaluasi:* Cookie `access_token` dan `refresh_token` terkonfirmasi `httpOnly: true`, `SameSite: Lax`. Pada `localStorage` hanya terdapat key non-sensitif `sw_onboarded: "1"`, dan `sessionStorage` kosong (0 token JWT).
+2. **Skenario Sesi 2 (Persistensi Sesi Setelah Muat Ulang & Toast Hilang):**
+   * *Bukti:* `tests/e2e/artifacts/t910_session_persisted_after_reload.png`
+   * *Hasil Evaluasi:* Toast sambutan hilang sepenuhnya (`.toast` count = 0), halaman dimuat ulang secara keras (`Page.reload`), dan sesi tetap bertahan aktif (nama bisnis dan profil termuat tanpa terlempar ke halaman login).
+
+### 9.4 Hasil Pengujian Backend (pytest)
+* Seluruh test suite backend dijalankan di container Docker:
+  `26 passed, 1 warning in 1.69s` (100% lulus, 0 regresi).

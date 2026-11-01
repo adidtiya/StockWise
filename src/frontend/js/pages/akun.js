@@ -78,12 +78,12 @@ export const profil = {
       <form class="card stack" id="pf" novalidate>
         <h2>Data pemilik & usaha</h2>
         <div class="grid grid-2" style="gap:12px">
-          <div class="field"><label>Nama lengkap</label><input class="input" name="name" value="${u.name}" /></div>
-          <div class="field"><label>Email</label><input class="input" name="email" type="email" value="${u.email}" /></div>
-          <div class="field"><label>No. WhatsApp</label><input class="input" name="phone" value="${u.phone || ''}" inputmode="tel" /></div>
-          <div class="field"><label>Kota</label><input class="input" name="city" value="${u.city || ''}" /></div>
-          <div class="field"><label>Nama usaha</label><input class="input" name="business_name" value="${u.business_name}" /></div>
-          <div class="field"><label>Jenis usaha</label><select class="input" name="business_type">${Object.entries(BUSINESS_TYPES).map(([k, l]) => html`<option value="${k}" ${u.business_type === k ? 'selected' : ''}>${l}</option>`)}</select></div>
+          <div class="field"><label for="pf-name">Nama lengkap</label><input class="input" id="pf-name" name="name" value="${u.name}" /></div>
+          <div class="field"><label for="pf-email">Email</label><input class="input" id="pf-email" name="email" type="email" value="${u.email}" /></div>
+          <div class="field"><label for="pf-phone">No. WhatsApp</label><input class="input" id="pf-phone" name="phone" value="${u.phone || ''}" inputmode="tel" /></div>
+          <div class="field"><label for="pf-city">Kota</label><input class="input" id="pf-city" name="city" value="${u.city || ''}" /></div>
+          <div class="field"><label for="pf-biz">Nama usaha</label><input class="input" id="pf-biz" name="business_name" value="${u.business_name}" /></div>
+          <div class="field"><label for="pf-type">Jenis usaha</label><select class="input" id="pf-type" name="business_type">${Object.entries(BUSINESS_TYPES).map(([k, l]) => html`<option value="${k}" ${u.business_type === k ? 'selected' : ''}>${l}</option>`)}</select></div>
         </div>
         <button class="btn" type="submit" style="align-self:flex-end">${icon('check')}Simpan perubahan</button>
       </form>
@@ -141,11 +141,15 @@ export async function openFeedbackModal(onSuccess = () => {}) {
         <p class="small muted">Masukan Anda sangat berharga untuk meningkatkan akurasi dan fitur StockWise.</p>
       </div>
       <div class="field">
-        <label for="modal-rating">Rating Bintang (1–5)</label>
-        <div class="row" style="gap:8px">
-          <input class="input" type="number" id="modal-rating" value="5" style="max-width:100px" />
-          <span class="small muted" style="align-self:center">skala 1 sampai 5</span>
+        <label id="modal-rating-label">Rating Pengalaman (1–5 Bintang)</label>
+        <div class="stars" id="modal-star-picker" role="radiogroup" aria-labelledby="modal-rating-label" style="margin-top:4px">
+          ${[1, 2, 3, 4, 5].map(
+            (n) => html`<button type="button" class="star-btn ${n <= 5 ? 'on' : ''}" data-value="${n}" aria-label="${n} dari 5 bintang" role="radio" aria-checked="${n === 5}">
+              ${icon('star')}
+            </button>`
+          )}
         </div>
+        <input type="hidden" id="modal-rating" value="5" />
       </div>
       <div class="field">
         <label for="modal-cat">Kategori</label>
@@ -160,13 +164,28 @@ export async function openFeedbackModal(onSuccess = () => {}) {
         <textarea class="input" id="modal-msg" rows="3" placeholder="Tuliskan pengalaman atau kendala yang Anda alami...">Sangat membantu memotong limbah ayam harian!</textarea>
       </div>
     </div>`,
+    onMount: (m) => {
+      const starPicker = m.querySelector('#modal-star-picker');
+      const ratingInput = m.querySelector('#modal-rating');
+      starPicker?.querySelectorAll('.star-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const val = Number(btn.dataset.value);
+          ratingInput.value = val;
+          starPicker.querySelectorAll('.star-btn').forEach((b) => {
+            const bVal = Number(b.dataset.value);
+            b.classList.toggle('on', bVal <= val);
+            b.setAttribute('aria-checked', bVal === val ? 'true' : 'false');
+          });
+        });
+      });
+    },
     actions: [
       { label: 'Batal', cls: 'btn-secondary' },
       {
         label: 'Kirim Feedback',
         cls: 'btn btn-primary',
         onClick: async (m) => {
-          const ratingVal = Number(m.querySelector('#modal-rating')?.value);
+          const ratingVal = Number(m.querySelector('#modal-rating')?.value || 5);
           const categoryVal = m.querySelector('#modal-cat')?.value || 'umum';
           const msgVal = m.querySelector('#modal-msg')?.value || '';
 
@@ -222,11 +241,15 @@ export const feedback = {
             <p class="small muted">Masukanmu membantu kami memperbaiki akurasi peramalan dan rekomendasi bahan baku.</p>
           </div>
           <div class="field">
-            <label for="direct-rating">Rating Bintang (1–5)</label>
-            <div class="row" style="gap:8px">
-              <input class="input" type="number" id="direct-rating" name="rating" value="${rating}" style="max-width:100px" />
-              <span class="small muted" style="align-self:center">skala 1 sampai 5</span>
+            <label id="direct-rating-label">Rating Pengalaman (1–5 Bintang)</label>
+            <div class="stars" id="page-star-picker" role="radiogroup" aria-labelledby="direct-rating-label" style="margin-top:4px">
+              ${[1, 2, 3, 4, 5].map(
+                (n) => html`<button type="button" class="star-btn ${n <= rating ? 'on' : ''}" data-value="${n}" aria-label="${n} dari 5 bintang" role="radio" aria-checked="${n === rating}">
+                  ${icon('star')}
+                </button>`
+              )}
             </div>
+            <input type="hidden" id="direct-rating" name="rating" value="${rating}" />
           </div>
           <div class="field">
             <span class="label-text">Kategori</span>
@@ -250,6 +273,21 @@ export const feedback = {
       </div>`;
 
       const f = el.querySelector('#f');
+      const starPicker = el.querySelector('#page-star-picker');
+      const ratingInput = el.querySelector('#direct-rating');
+      starPicker?.querySelectorAll('.star-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const val = Number(btn.dataset.value);
+          ratingInput.value = val;
+          rating = val;
+          starPicker.querySelectorAll('.star-btn').forEach((b) => {
+            const bVal = Number(b.dataset.value);
+            b.classList.toggle('on', bVal <= val);
+            b.setAttribute('aria-checked', bVal === val ? 'true' : 'false');
+          });
+        });
+      });
+
       const syncChips = () => f.querySelectorAll('.chip').forEach((c) => c.classList.toggle('active', c.querySelector('input').checked));
       f.querySelectorAll('[name=category]').forEach((r) => (r.onchange = syncChips));
 
@@ -257,7 +295,7 @@ export const feedback = {
 
       f.onsubmit = async (e) => {
         e.preventDefault();
-        const ratingVal = Number(f.querySelector('#direct-rating')?.value);
+        const ratingVal = Number(f.querySelector('#direct-rating')?.value || 5);
         const categoryVal = f.querySelector('[name=category]:checked')?.value || 'umum';
         const msgVal = f.querySelector('#msg')?.value || '';
 

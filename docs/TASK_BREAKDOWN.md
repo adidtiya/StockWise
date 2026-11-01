@@ -858,7 +858,7 @@ Tujuan: Memperbaiki tampilan antarmuka `src/frontend/` yang rusak setelah Fase 8
   * **Kriteria Selesai:**
     * Pada data uji dan akun kosong, ketiga halaman memberi 0 temuan di `ui_check.js` pada tiga lebar layar, dan screenshotnya sudah ditinjau.
 
-- [ ] **T-9.6 Perbaiki halaman Transaksi (Input Penjualan, Import Excel, Riwayat)**
+- [x] **T-9.6 Perbaiki halaman Transaksi (Input Penjualan, Import Excel, Riwayat)**
   * **Ukuran:** M
   * **Rujukan:** PRD UC-03, UC-04, UC-10; TRD 6.2.7
   * **Dependensi:** T-9.3
@@ -870,7 +870,7 @@ Tujuan: Memperbaiki tampilan antarmuka `src/frontend/` yang rusak setelah Fase 8
   * **Kriteria Selesai:**
     * Ketiga halaman memberi 0 temuan di `ui_check.js` pada tiga lebar layar, termasuk setelah mengimpor berkas contoh dengan baris valid dan tidak valid.
 
-- [ ] **T-9.7 Perbaiki halaman Analitik (Dashboard, Forecast, Rekomendasi, Evaluasi)**
+- [x] **T-9.7 Perbaiki halaman Analitik (Dashboard, Forecast, Rekomendasi, Evaluasi)**
   * **Ukuran:** M
   * **Rujukan:** PRD UC-05, UC-06, UC-07, UC-09; TRD 6.2.9 sampai 6.2.12
   * **Dependensi:** T-9.3
@@ -885,7 +885,7 @@ Tujuan: Memperbaiki tampilan antarmuka `src/frontend/` yang rusak setelah Fase 8
     * Dengan data uji 28 hari, keempat halaman tampil tanpa temuan di `ui_check.js` pada tiga lebar layar, dan tidak ada `console.error`.
     * Dengan akun kosong, ketiga halaman yang membutuhkan riwayat menampilkan *empty state* yang jelas.
 
-- [ ] **T-9.8 Perbaiki halaman Akun dan Langganan (Paket, Sinkronisasi API, Profil, Feedback)**
+- [x] **T-9.8 Perbaiki halaman Akun dan Langganan (Paket, Sinkronisasi API, Profil, Feedback)**
   * **Ukuran:** S
   * **Rujukan:** PRD UC-11, UC-12, UC-13; TRD 6.2.13, 6.2.14
   * **Dependensi:** T-9.3
@@ -898,7 +898,7 @@ Tujuan: Memperbaiki tampilan antarmuka `src/frontend/` yang rusak setelah Fase 8
   * **Kriteria Selesai:**
     * Pada akun Freemium dan akun Pro, kedua halaman memberi 0 temuan di `ui_check.js` pada tiga lebar layar.
 
-- [ ] **T-9.9 Responsif dan PWA (sidebar, navigasi mobile, ukuran tap, manifest)**
+- [x] **T-9.9 Responsif dan PWA (sidebar, navigasi mobile, ukuran tap, manifest)**
   * **Ukuran:** M
   * **Rujukan:** `docs/UI_AUDIT.md`; `src/frontend/index.html`, `manifest.webmanifest`
   * **Dependensi:** T-9.4, T-9.5, T-9.6, T-9.7, T-9.8
@@ -912,7 +912,7 @@ Tujuan: Memperbaiki tampilan antarmuka `src/frontend/` yang rusak setelah Fase 8
     * `ui_check.js` memberi 0 temuan pada seluruh 14 halaman di lebar 1280, 768, dan 390 px.
     * Pada 390 px, navigasi bisa dioperasikan hanya dengan sentuhan: buka menu, pindah halaman, dan menu tertutup kembali.
 
-- [ ] **T-9.10 Verifikasi akhir Fase 9 dan pengecekan ulang skenario sesi**
+- [x] **T-9.10 Verifikasi akhir Fase 9 dan pengecekan ulang skenario sesi**
   * **Ukuran:** M
   * **Rujukan:** `docs/UI_AUDIT.md`; PRD UC-01
   * **Dependensi:** T-9.9
