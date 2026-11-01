@@ -131,54 +131,152 @@ export const profil = {
 };
 
 // UC-12 Feedback
+export async function openFeedbackModal(onSuccess = () => {}) {
+  let category = 'rekomendasi_pembelian';
+
+  await modal({
+    title: 'Kirim Feedback Pengguna',
+    body: html`<div class="stack" id="feedback-modal-wrap">
+      <div>
+        <p class="small muted">Masukan Anda sangat berharga untuk meningkatkan akurasi dan fitur StockWise.</p>
+      </div>
+      <div class="field">
+        <label for="modal-rating">Rating Bintang (1–5)</label>
+        <div class="row" style="gap:8px">
+          <input class="input" type="number" id="modal-rating" value="5" style="max-width:100px" />
+          <span class="small muted" style="align-self:center">skala 1 sampai 5</span>
+        </div>
+      </div>
+      <div class="field">
+        <label for="modal-cat">Kategori</label>
+        <select class="input" id="modal-cat">
+          <option value="rekomendasi_pembelian">Rekomendasi Pembelian</option>
+          <option value="forecast">Peramalan Kebutuhan</option>
+          <option value="umum">Fitur Umum & Tampilan</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="modal-msg">Pesan / Masukan</label>
+        <textarea class="input" id="modal-msg" rows="3" placeholder="Tuliskan pengalaman atau kendala yang Anda alami...">Sangat membantu memotong limbah ayam harian!</textarea>
+      </div>
+    </div>`,
+    actions: [
+      { label: 'Batal', cls: 'btn-secondary' },
+      {
+        label: 'Kirim Feedback',
+        cls: 'btn btn-primary',
+        onClick: async (m) => {
+          const ratingVal = Number(m.querySelector('#modal-rating')?.value);
+          const categoryVal = m.querySelector('#modal-cat')?.value || 'umum';
+          const msgVal = m.querySelector('#modal-msg')?.value || '';
+
+          if (!msgVal.trim()) {
+            toast('Pesan feedback tidak boleh kosong', 'error');
+            throw new Error('Pesan feedback tidak boleh kosong');
+          }
+
+          try {
+            await api('/feedback', {
+              method: 'POST',
+              body: {
+                rating: ratingVal,
+                category: categoryVal,
+                message: msgVal.trim(),
+              },
+            });
+            toast('Terima kasih! Feedback berhasil dikirim.');
+            onSuccess();
+          } catch (err) {
+            toast(err.message, 'error');
+            throw err;
+          }
+        },
+      },
+    ],
+  });
+}
+
 export const feedback = {
   title: 'Feedback',
   async render(el) {
-    el.innerHTML = loading(2);
-    const d = await api('/feedback');
-    let rating = 0;
+    let rating = 5;
+    const categories = ['rekomendasi_pembelian', 'forecast', 'umum'];
+
     const draw = () => {
       el.innerHTML = html`<div class="stack" style="max-width:720px">
+        <div class="card stack">
+          <div class="row-between wrap">
+            <div>
+              <h2>Beri Masukan untuk StockWise</h2>
+              <p class="small muted">Anda dapat mengisi feedback melalui formulir di bawah ini atau melalui dialog modal.</p>
+            </div>
+            <button class="btn btn-secondary" id="open-feedback-modal" type="button">
+              ${icon('message')}Buka Modal Feedback
+            </button>
+          </div>
+        </div>
+
         <form class="card stack" id="f" novalidate>
-          <div><h2>Bagaimana pengalamanmu memakai StockWise?</h2><p class="small muted">Masukanmu membantu kami memperbaiki forecast dan fitur aplikasi.</p></div>
-          <div class="stars" id="stars">${[1, 2, 3, 4, 5].map((n) => html`<button type="button" data-n="${n}" class="${n <= rating ? 'on' : ''}" aria-label="${n} bintang">${icon('star')}</button>`)}</div>
-          <div class="field"><span class="label-text">Kategori</span><div class="chips">${d.categories.map((c, i) => html`<label class="chip" style="position:relative"><input type="radio" name="category" value="${c}" ${i === 0 ? 'checked' : ''} class="sr-only" />${c}</label>`)}</div></div>
-          <div class="field"><label for="msg">Ceritakan lebih lanjut</label><textarea class="input" id="msg" name="message" placeholder="cth. Forecast ayam saat tanggal gajian terlalu rendah…"></textarea></div>
-          <button class="btn" type="submit" style="align-self:flex-end">${icon('message')}Kirim feedback</button>
+          <div>
+            <h2>Bagaimana pengalamanmu memakai StockWise?</h2>
+            <p class="small muted">Masukanmu membantu kami memperbaiki akurasi peramalan dan rekomendasi bahan baku.</p>
+          </div>
+          <div class="field">
+            <label for="direct-rating">Rating Bintang (1–5)</label>
+            <div class="row" style="gap:8px">
+              <input class="input" type="number" id="direct-rating" name="rating" value="${rating}" style="max-width:100px" />
+              <span class="small muted" style="align-self:center">skala 1 sampai 5</span>
+            </div>
+          </div>
+          <div class="field">
+            <span class="label-text">Kategori</span>
+            <div class="chips">
+              ${categories.map(
+                (c, i) => html`<label class="chip ${i === 0 ? 'active' : ''}" style="position:relative">
+                  <input type="radio" name="category" value="${c}" ${i === 0 ? 'checked' : ''} class="sr-only" />
+                  ${c}
+                </label>`
+              )}
+            </div>
+          </div>
+          <div class="field">
+            <label for="msg">Ceritakan lebih lanjut</label>
+            <textarea class="input" id="msg" name="message" placeholder="cth. Forecast ayam saat tanggal gajian terlalu rendah…">Sangat membantu operasional katering kami.</textarea>
+          </div>
+          <button class="btn" type="submit" id="submit-feedback" style="align-self:flex-end">
+            ${icon('message')}Kirim Feedback
+          </button>
         </form>
-        ${d.items.length
-          ? html`<div class="card"><h2 style="margin-bottom:8px">Feedback terkirim</h2><div class="list">${d.items.map(
-              (f) => html`<div class="list-item" style="align-items:flex-start"><div class="avatar">${icon('message')}</div>
-                <div class="grow"><div class="row wrap" style="gap:6px"><b>${'★'.repeat(f.rating)}${'☆'.repeat(5 - f.rating)}</b><span class="badge">${f.category}</span><span class="xs muted">${dateTime(f.created_at)}</span></div>
-                <p class="small" style="margin-top:4px;white-space:pre-wrap">${f.message}</p></div></div>`
-            )}</div></div>`
-          : ''}
       </div>`;
+
       const f = el.querySelector('#f');
       const syncChips = () => f.querySelectorAll('.chip').forEach((c) => c.classList.toggle('active', c.querySelector('input').checked));
       f.querySelectorAll('[name=category]').forEach((r) => (r.onchange = syncChips));
-      syncChips();
-      el.querySelectorAll('#stars button').forEach(
-        (b) =>
-          (b.onclick = () => {
-            rating = +b.dataset.n;
-            el.querySelectorAll('#stars button').forEach((x) => x.classList.toggle('on', +x.dataset.n <= rating));
-          })
-      );
+
+      el.querySelector('#open-feedback-modal')?.addEventListener('click', () => openFeedbackModal());
+
       f.onsubmit = async (e) => {
         e.preventDefault();
+        const ratingVal = Number(f.querySelector('#direct-rating')?.value);
+        const categoryVal = f.querySelector('[name=category]:checked')?.value || 'umum';
+        const msgVal = f.querySelector('#msg')?.value || '';
+
         try {
-          await api('/feedback', { method: 'POST', body: { ...formData(f), rating } });
-          toast('Terima kasih! Feedback terkirim.');
-          const fresh = await api('/feedback');
-          d.items = fresh.items;
-          rating = 0;
-          draw();
+          await api('/feedback', {
+            method: 'POST',
+            body: {
+              rating: ratingVal,
+              category: categoryVal,
+              message: msgVal.trim(),
+            },
+          });
+          toast('Terima kasih! Feedback berhasil dikirim.');
         } catch (err) {
           toast(err.message, 'error');
         }
       };
     };
+
     draw();
   },
 };

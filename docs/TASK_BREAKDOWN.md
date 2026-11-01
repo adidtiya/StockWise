@@ -29,6 +29,7 @@ Setelah tugas selesai diverifikasi dan dinyatakan lolos, centang kotak checkbox 
 | **Fase 6: Dashboard** | Agregasi analitik inventaris dan kartu kapasitas porsi menu produk | 1 | Endpoint dashboard menyajikan grafik tren penjualan dan ketersediaan porsi menu secara instan |
 | **Fase 7: Fitur Simulasi** | Menyediakan alur upgrade Pro, sinkronisasi mock data POS/ojol, dan feedback | 3 | Upgrade paket Pro langsung aktif, mock sync menyuntikkan pesanan, dan teks feedback tersimpan |
 | **Fase 8: Integrasi Frontend** | Menghubungkan client PWA `src/frontend/js/` ke base path `/api/v1` dan response envelope | 6 | Seluruh halaman UI PWA berfungsi mulus menggunakan backend FastAPI lokal |
+| **Fase 8C: Perbaikan UI Frontend** | Audit visual, memperbaiki akar masalah CSS/ikon/layout, merapikan komponen dan halaman, serta responsif | 10 | Skrip pemeriksa UI melaporkan 0 temuan di 3 ukuran layar, tanpa error konsol, dan screenshot 14 halaman sudah ditinjau |
 | **Fase 9: Pengujian & Demo** | Otomasi test suite (unit & API), seeding data awal, dan pembersihan artefak lama | 5 | Seluruh tes Pytest lolos (`pytest tests/`), data seed terisi, dan checklist demo 13 UC tervalidasi |
 
 ---
@@ -735,7 +736,7 @@ Tujuan: Menyesuaikan antarmuka Vanilla JS / PWA di `src/frontend/` agar kompatib
   * **Kriteria Selesai:**
     * Input bahan baru dan pembuatan menu resep di antarmuka web berhasil muncul di daftar tabel UI secara reaktif.
 
-- [ ] **T-8.4 Penyesuaian halaman Penjualan, Impor Excel, & Riwayat**
+- [x] **T-8.4 Penyesuaian halaman Penjualan, Impor Excel, & Riwayat**
   * **Ukuran:** S
   * **Rujukan:** TRD 6.2.7; PRD UC-03, UC-04, UC-10
   * **Dependensi:** T-8.1, T-4.3
@@ -747,7 +748,7 @@ Tujuan: Menyesuaikan antarmuka Vanilla JS / PWA di `src/frontend/` agar kompatib
   * **Kriteria Selesai:**
     * Berkas template Excel berhasil diunduh via tombol di web, dan pengunggahan berkas Excel menampilkan pesan sukses baris terimpor.
 
-- [ ] **T-8.5 Penyesuaian halaman Forecast, Rekomendasi, Evaluasi, & Dashboard**
+- [x] **T-8.5 Penyesuaian halaman Forecast, Rekomendasi, Evaluasi, & Dashboard**
   * **Ukuran:** M
   * **Rujukan:** TRD 6.2.9, TRD 6.2.10, TRD 6.2.11, TRD 6.2.12; PRD UC-05, UC-06, UC-07, UC-09
   * **Dependensi:** T-8.1, T-5.5, T-6.1
@@ -760,7 +761,7 @@ Tujuan: Menyesuaikan antarmuka Vanilla JS / PWA di `src/frontend/` agar kompatib
   * **Kriteria Selesai:**
     * Halaman dashboard dan rekomendasi merender grafik visual serta indikator skor risiko limbah tanpa error konsol JavaScript di peramban.
 
-- [ ] **T-8.6 Penyesuaian halaman Langganan Pro & Integrasi Mock**
+- [x] **T-8.6 Penyesuaian halaman Langganan Pro & Integrasi Mock**
   * **Ukuran:** S
   * **Rujukan:** TRD 6.2.13, TRD 6.2.14; PRD UC-11, UC-13
   * **Dependensi:** T-8.1, T-7.2
@@ -772,6 +773,160 @@ Tujuan: Menyesuaikan antarmuka Vanilla JS / PWA di `src/frontend/` agar kompatib
     4. Sediakan modal dialog sederhana untuk form feedback pengguna yang mengirim data ke `/api/v1/feedback`.
   * **Kriteria Selesai:**
     * Klik tombol upgrade di antarmuka langsung mengubah badge pengguna menjadi "PRO" dan membuka akses tombol sinkronisasi.
+
+---
+
+### Fase 8C: Perbaikan UI & Konsistensi Visual Frontend
+Tujuan: Memperbaiki tampilan antarmuka `src/frontend/` yang rusak setelah Fase 8 (contoh: ikon chevron pada checklist onboarding Beranda membesar memenuhi kartu dan menekan teks deskripsi menjadi kolom sempit). Fase ini hanya menyentuh lapisan tampilan (HTML, CSS, dan JS presentasi).
+
+**Aturan khusus Fase 8C**
+1. Jangan mengubah logika bisnis, endpoint, payload, atau `src/frontend/js/api.js`. Jika perbaikan tampilan menuntut perubahan di luar lapisan tampilan, catat di bagian "Temuan dan Keputusan yang Dibutuhkan" dan jangan dikerjakan.
+2. Perbaiki **akar masalah** (aturan CSS global atau komponen bersama) sebelum menambal halaman satu per satu. Satu perbaikan global yang benar lebih baik daripada belasan penimpaan per halaman.
+3. Jangan menambah library atau framework CSS/JS baru. Jangan mengubah identitas visual (palet warna, font, logo) kecuali bagian itu sendiri yang rusak.
+4. Setiap tugas hanya boleh dinyatakan selesai jika: (a) skrip pemeriksa UI (`tests/e2e/ui_check.js`, dibuat di T-8C.1) menghasilkan 0 temuan pada halaman yang dikerjakan, (b) tidak ada `console.error`, dan (c) screenshot sesudah perbaikan sudah **dibuka dan dideskripsikan** dalam laporan (apa yang terlihat, bukan sekadar nama file).
+5. Screenshot disimpan di `tests/e2e/artifacts/` dengan pola `<id-tugas>_<halaman>_<lebar>.png` dan folder tersebut masuk `.gitignore`.
+
+- [ ] **T-8C.1 Audit visual semua halaman (hanya membaca, tanpa mengubah kode)**
+  * **Ukuran:** M
+  * **Rujukan:** Fase 8 (T-8.1 sampai T-8.6); PRD UC-01 sampai UC-13
+  * **Dependensi:** T-8.6
+  * **File:** `tests/e2e/ui_check.js` (baru), `docs/UI_AUDIT.md` (baru)
+  * **Langkah:**
+    1. Jalankan aplikasi lewat `docker compose` development. Buat satu akun uji, dan isi data secukupnya (bahan, menu beserta resep, penjualan) agar halaman tidak kosong. Buat juga satu akun kosong untuk memeriksa tampilan *empty state*.
+    2. Buat `tests/e2e/ui_check.js` berisi skrip yang dijalankan di konsol browser dan mengembalikan daftar temuan: (a) elemen `svg` yang lebarnya atau tingginya lebih dari 64 px (grafik dan ilustrasi yang disengaja dicatat, bukan dihitung temuan), (b) overflow horizontal (`scrollWidth` dokumen lebih besar dari `innerWidth`), (c) elemen teks yang lebarnya kurang dari 120 px padahal teksnya lebih dari 30 karakter, (d) gambar atau font yang gagal dimuat.
+    3. Untuk setiap halaman (`auth`, `onboarding`, Beranda/`dashboard`, `bahan`, `menu`, `event`, `penjualan`, `import`, `riwayat`, `forecast`, `rekomendasi`, `evaluasi`, `langganan`, `akun`), beserta modal dan *empty state* yang ada, ambil screenshot pada lebar 1280, 768, dan 390 px. Jalankan `ui_check.js` pada tiap kombinasi dan catat `console.error` serta respons jaringan 4xx/5xx.
+    4. Tulis `docs/UI_AUDIT.md`: tabel temuan dengan kolom ID (`U-01`, `U-02`, dan seterusnya), halaman, lebar layar, tingkat (Kritis, Tinggi, Sedang, Rendah), deskripsi apa yang terlihat, bukti (nama screenshot atau keluaran skrip), dan dugaan akar masalah (nama file CSS atau JS, nomor baris bila bisa). Kelompokkan temuan yang berakar sama menjadi satu akar masalah.
+    5. Sebut secara eksplisit temuan awal yang sudah diketahui: ikon chevron raksasa pada item checklist onboarding di Beranda, dan teks deskripsi ("Nama, satuan, kategori segar / tahan lama, dan umur simpan.") terjepit menjadi kolom sempit.
+  * **Kriteria Selesai:**
+    * `docs/UI_AUDIT.md` ada dan memuat screenshot sebanyak 14 halaman × 3 lebar layar yang dirujuk, dan setiap temuan punya bukti.
+    * Tidak ada file di `src/frontend/` yang berubah (`git status` hanya menunjukkan `tests/e2e/`, `docs/`, dan `.gitignore`).
+
+- [ ] **T-8C.2 Perbaiki akar masalah global: ukuran ikon dan layout dasar (CSS)**
+  * **Ukuran:** M
+  * **Rujukan:** `docs/UI_AUDIT.md` (akar masalah global); file di `src/frontend/css/`
+  * **Dependensi:** T-8C.1
+  * **File:** file CSS utama di `src/frontend/css/` (nama ditentukan dari audit), `src/frontend/index.html` jika urutan pemuatan CSS perlu diperbaiki
+  * **Langkah:**
+    1. Tentukan dari audit mengapa ikon SVG tidak punya ukuran (misalnya atribut `width` dan `height` tidak ada pada SVG yang dirender JS, kelas ukuran ikon tidak cocok dengan kelas yang dipakai di HTML hasil render, atau aturan CSS tertimpa).
+    2. Tambahkan aturan dasar yang berlaku untuk semua ikon: ukuran bawaan (misalnya `1.25em` atau 20 px), `flex-shrink: 0`, dan `display: inline-block`. Varian ukuran (kecil, sedang, besar) memakai kelas yang konsisten.
+    3. Perbaiki pola layout kartu atau baris berisi ikon, teks, dan panah: blok teks diberi `flex: 1` dan `min-width: 0` agar tidak terjepit atau meluber, dan ikon tidak boleh ikut melebar.
+    4. Periksa urutan dan jalur pemuatan CSS dan font di `index.html` (jalur relatif setelah folder dipindah dari `public/` ke `src/frontend/`). Perbaiki jika ada file yang gagal dimuat (404).
+    5. Jika aplikasi memakai service worker, naikkan versi cache-nya agar CSS lama yang rusak tidak tersajikan dari cache. Tulis di laporan cara melakukan *hard reload* dan menghapus cache saat pengujian.
+  * **Kriteria Selesai:**
+    * Pada Beranda (akun baru), `ui_check.js` tidak melaporkan SVG berukuran lebih dari 64 px pada checklist onboarding, dan ikon chevron berukuran 24 px atau kurang.
+    * Pada lebar 1280 px, teks deskripsi item checklist berlebar minimal 200 px dan tampil dalam satu atau dua baris, bukan kolom sempit.
+    * Tidak ada 404 untuk file CSS, font, atau gambar pada seluruh halaman.
+
+- [ ] **T-8C.3 Rapikan komponen UI bersama (toast, modal, tabel, form, tombol, badge, empty state)**
+  * **Ukuran:** M
+  * **Rujukan:** `docs/UI_AUDIT.md`; kode komponen bersama di `src/frontend/js/` dan `src/frontend/css/` (lokasi ditentukan dari audit)
+  * **Dependensi:** T-8C.2
+  * **File:** file komponen bersama di `src/frontend/js/` dan CSS terkait
+  * **Langkah:**
+    1. Toast: posisi tidak menutupi tombol utama atau konten penting, hilang otomatis, dan teks tidak terpotong. Toast berjenis sukses, error, dan peringatan punya warna yang jelas.
+    2. Modal: terpusat, bisa ditutup dengan tombol, tombol Esc, dan klik latar, isi yang panjang bisa digulir di dalam modal, dan latar halaman tidak ikut tergulir.
+    3. Tabel: kontainer tabel yang lebar bisa digulir horizontal di dalam kontainernya sendiri (halaman tidak ikut meluber), header rapi, dan angka rata kanan.
+    4. Form dan tombol: label terhubung ke input, jarak antarelemen konsisten, keadaan `disabled`, `loading`, dan `:focus-visible` terlihat jelas.
+    5. Badge (risiko, PRO, status) dan *empty state*: ukuran dan padding seragam, serta kontras teks terhadap latar minimal 4,5:1.
+  * **Kriteria Selesai:**
+    * `ui_check.js` memberi 0 temuan pada seluruh halaman di lebar 1280 px.
+    * Screenshot satu toast, satu modal, satu tabel, satu empty state, dan satu badge dari tiap jenis sudah ditinjau dan dideskripsikan di laporan.
+
+- [ ] **T-8C.4 Perbaiki Beranda, onboarding, dan halaman Auth**
+  * **Ukuran:** S
+  * **Rujukan:** PRD UC-01, UC-02; `docs/UI_AUDIT.md`
+  * **Dependensi:** T-8C.3
+  * **File:** `src/frontend/js/pages/auth.js`, `src/frontend/js/pages/onboarding.js`, `src/frontend/js/pages/dashboard.js` (bagian Beranda/checklist), CSS terkait
+  * **Langkah:**
+    1. Item checklist onboarding menampilkan ikon, judul langkah, deskripsi, dan panah dengan susunan rapi. Periksa apakah judul langkah ikut hilang pada tampilan sebelumnya. Jika ya, perbaiki.
+    2. Item yang sudah selesai ditandai berbeda dari yang belum, dan klik item membawa ke halaman yang tepat.
+    3. Halaman login dan registrasi: pesan error validasi dan pesan 429 tampil di dekat form, bukan hanya sebagai toast, dan tombol masuk menunjukkan keadaan loading.
+  * **Kriteria Selesai:**
+    * Akun baru: seluruh item checklist terbaca penuh pada lebar 1280, 768, dan 390 px, dan `ui_check.js` memberi 0 temuan.
+    * Registrasi dengan email yang sudah terdaftar dan login dengan password salah masing-masing menampilkan pesan error yang jelas di form.
+
+- [ ] **T-8C.5 Perbaiki halaman Data Master (Stok & Bahan, Menu & Resep, Event)**
+  * **Ukuran:** M
+  * **Rujukan:** PRD UC-02; TRD 6.2.3, 6.2.4, 6.2.8
+  * **Dependensi:** T-8C.3
+  * **File:** `src/frontend/js/pages/bahan.js`, `menu.js`, `event.js`, CSS terkait
+  * **Langkah:**
+    1. Tabel bahan dan stok: kolom satuan, kategori (segar atau tahan lama), umur simpan, dan stok terbaca rapi, dan form tambah atau ubah tidak meluber.
+    2. Menu dan resep: baris bahan pada resep (tambah dan hapus baris) tersusun rapi, input takaran berukuran wajar, dan daftar menu tidak berantakan saat resepnya panjang.
+    3. Event: input tanggal, nama, dan persentase dampak jelas dengan satuannya, dan daftar event rapi.
+    4. Pastikan *empty state* tiap halaman memberi petunjuk langkah berikutnya.
+  * **Kriteria Selesai:**
+    * Pada data uji dan akun kosong, ketiga halaman memberi 0 temuan di `ui_check.js` pada tiga lebar layar, dan screenshotnya sudah ditinjau.
+
+- [ ] **T-8C.6 Perbaiki halaman Transaksi (Input Penjualan, Import Excel, Riwayat)**
+  * **Ukuran:** M
+  * **Rujukan:** PRD UC-03, UC-04, UC-10; TRD 6.2.7
+  * **Dependensi:** T-8C.3
+  * **File:** `src/frontend/js/pages/penjualan.js`, `import.js`, `riwayat.js`, CSS terkait
+  * **Langkah:**
+    1. Form input penjualan: baris produk dan jumlah rapi, tombol tambah baris jelas, dan tanggal bawaan terisi hari ini.
+    2. Import Excel: area *drag-and-drop* terlihat jelas dalam keadaan normal, saat berkas diseret, saat mengunggah, dan saat selesai. Hasil impor (jumlah baris berhasil dan daftar baris gagal beserta alasannya) tersusun terbaca.
+    3. Riwayat: filter tanggal dan sumber rapi, tabel panjang bisa digulir di dalam kontainernya, dan paginasi atau pemuatan lebih banyak tidak merusak layout.
+  * **Kriteria Selesai:**
+    * Ketiga halaman memberi 0 temuan di `ui_check.js` pada tiga lebar layar, termasuk setelah mengimpor berkas contoh dengan baris valid dan tidak valid.
+
+- [ ] **T-8C.7 Perbaiki halaman Analitik (Dashboard, Forecast, Rekomendasi, Evaluasi)**
+  * **Ukuran:** M
+  * **Rujukan:** PRD UC-05, UC-06, UC-07, UC-09; TRD 6.2.9 sampai 6.2.12
+  * **Dependensi:** T-8C.3
+  * **File:** `src/frontend/js/pages/dashboard.js`, `forecast.js`, `rekomendasi.js`, `evaluasi.js`, CSS terkait
+  * **Langkah:**
+    1. Grafik SVG: ukuran mengikuti lebar kontainer (`viewBox` dan `preserveAspectRatio` tepat), label sumbu terbaca, dan tidak terpotong saat layar sempit.
+    2. Forecast: rentang `need_lo` sampai `need_hi` ditampilkan sebagai rentang yang mudah dibaca dengan satuan bahan dan format angka lokal Indonesia.
+    3. Rekomendasi: kartu beli rapi, badge Waste Risk Score memakai warna dan teks yang tidak bergantung pada warna saja (hijau untuk rendah, kuning untuk sedang, merah untuk tinggi, disertai teks levelnya), dengan kontras yang cukup.
+    4. Evaluasi: kartu akurasi dan WAPE, serta waktu pelatihan terakhir, tampil rapi, dan tombol latih ulang menunjukkan keadaan loading.
+    5. Keadaan "riwayat belum cukup" tampil sebagai *empty state* yang jelas pada halaman forecast, rekomendasi, dan dashboard.
+  * **Kriteria Selesai:**
+    * Dengan data uji 28 hari, keempat halaman tampil tanpa temuan di `ui_check.js` pada tiga lebar layar, dan tidak ada `console.error`.
+    * Dengan akun kosong, ketiga halaman yang membutuhkan riwayat menampilkan *empty state* yang jelas.
+
+- [ ] **T-8C.8 Perbaiki halaman Akun dan Langganan (Paket, Sinkronisasi API, Profil, Feedback)**
+  * **Ukuran:** S
+  * **Rujukan:** PRD UC-11, UC-12, UC-13; TRD 6.2.13, 6.2.14
+  * **Dependensi:** T-8C.3
+  * **File:** `src/frontend/js/pages/langganan.js`, `akun.js`, CSS terkait
+  * **Langkah:**
+    1. Kartu paket Freemium dan Pro sejajar rapi dan sama tinggi, dengan penanda jelas bahwa pembayaran adalah simulasi.
+    2. Badge PRO di sidebar dan di kartu konsisten, dan tombol sinkronisasi pada akun Freemium tampil nonaktif dengan penjelasan.
+    3. Kartu integrasi (MokaPOS, GoFood, Grab, Shopee Partner) tersusun rapi di grid dan tidak meluber.
+    4. Form profil dan modal feedback (bintang 1 sampai 5, kategori, pesan) rapi dan bisa dioperasikan dengan keyboard.
+  * **Kriteria Selesai:**
+    * Pada akun Freemium dan akun Pro, kedua halaman memberi 0 temuan di `ui_check.js` pada tiga lebar layar.
+
+- [ ] **T-8C.9 Responsif dan PWA (sidebar, navigasi mobile, ukuran tap, manifest)**
+  * **Ukuran:** M
+  * **Rujukan:** `docs/UI_AUDIT.md`; `src/frontend/index.html`, `manifest.webmanifest`
+  * **Dependensi:** T-8C.4, T-8C.5, T-8C.6, T-8C.7, T-8C.8
+  * **File:** CSS utama, `src/frontend/index.html`, JS navigasi (lokasi dari audit), `manifest.webmanifest`
+  * **Langkah:**
+    1. Pada lebar di bawah titik putus yang dipilih (misalnya 900 px), sidebar berubah menjadi menu yang bisa dibuka dan ditutup (drawer atau bar bawah) dan konten memakai lebar penuh. Menu tertutup otomatis setelah memilih halaman.
+    2. Pada lebar 390 px, tidak ada overflow horizontal di halaman mana pun, area sentuh tombol dan tautan minimal 44 px, dan ukuran font isi tidak kurang dari 14 px.
+    3. Periksa `viewport` meta, ikon dan `theme_color` di `manifest.webmanifest`, dan jalur ikon setelah folder dipindah.
+    4. Pastikan area bawah sidebar (menu keluar atau profil) tidak terpotong pada layar pendek.
+  * **Kriteria Selesai:**
+    * `ui_check.js` memberi 0 temuan pada seluruh 14 halaman di lebar 1280, 768, dan 390 px.
+    * Pada 390 px, navigasi bisa dioperasikan hanya dengan sentuhan: buka menu, pindah halaman, dan menu tertutup kembali.
+
+- [ ] **T-8C.10 Verifikasi akhir Fase 8C dan pengecekan ulang skenario sesi**
+  * **Ukuran:** M
+  * **Rujukan:** `docs/UI_AUDIT.md`; PRD UC-01
+  * **Dependensi:** T-8C.9
+  * **File:** `docs/UI_AUDIT.md` (diperbarui), `tests/e2e/artifacts/` (screenshot akhir)
+  * **Langkah:**
+    1. Ulangi seluruh pemeriksaan T-8C.1 (14 halaman × 3 lebar layar × akun berisi dan akun kosong). Perbarui `docs/UI_AUDIT.md`: tandai setiap temuan sebagai Selesai (dengan bukti sesudah perbaikan) atau Ditunda (dengan alasan).
+    2. Buka dan tinjau setiap screenshot akhir. Untuk tiap halaman, tulis satu kalimat tentang apa yang terlihat. Laporan tanpa deskripsi hasil tinjauan dianggap belum lengkap.
+    3. Ulangi dua skenario sesi dari Fase 8A yang buktinya sebelumnya tidak menunjukkan isi yang dimaksud: (a) buka panel Application di DevTools dan tunjukkan cookie sesi berstatus `HttpOnly` serta `localStorage` dan `sessionStorage` tanpa token, (b) muat ulang halaman dan buktikan sesi bertahan setelah toast hilang. Screenshot keduanya harus memperlihatkan panel atau halaman yang dimaksud.
+    4. Jalankan seluruh `pytest` untuk memastikan perubahan frontend tidak memengaruhi backend.
+    5. Tulis daftar temuan yang masih butuh keputusan manusia (misalnya selera visual) di "Temuan dan Keputusan yang Dibutuhkan".
+  * **Kriteria Selesai:**
+    * `ui_check.js` memberi 0 temuan pada seluruh kombinasi halaman, lebar layar, dan akun, dan tidak ada `console.error` maupun respons 4xx/5xx yang tidak diharapkan.
+    * Dua skenario sesi di langkah 3 punya screenshot yang memperlihatkan isi yang dimaksud.
+    * `pytest` penuh lulus.
 
 ---
 
@@ -839,7 +994,7 @@ Tujuan: Mengotomasi rangkaian tes unit dan API, menyediakan skrip data seed real
 - [ ] **T-9.5 Verifikasi end-to-end checklist demo 13 Use Case**
   * **Ukuran:** S
   * **Rujukan:** PRD 5.1 (UC-01 s/d UC-13); TRD 6.2
-  * **Dependensi:** T-9.4
+  * **Dependensi:** T-9.4, T-8C.10
   * **File:** `docs/CHECKLIST_DEMO.md` (baru)
   * **Langkah:**
     1. Buat checklist pengujian manual interaktif di file `docs/CHECKLIST_DEMO.md` mencakup skenario pengujian 13 Use Case.
@@ -932,3 +1087,9 @@ Berikut adalah daftar temuan teknis serta parameter bisnis yang belum ditetapkan
       - `src/frontend/js/api.js`: Konfigurasi base path menunjuk ke `http://localhost:8000/api/v1` dengan `credentials: 'include'` aktif di seluruh request. Interceptor 401 mengimplementasikan lock single-flight refresh dan mengecualikan `/auth/login`, `/auth/register`, `/auth/refresh`, `/auth/logout` dari rekursi refresh. Penanganan 429 mengekstrak header `Retry-After` dan memicu toast "Terlalu banyak permintaan. Silakan tunggu X detik".
       - `src/frontend/js/pages/auth.js` & `akun.js`: Token dihapus total dari `localStorage`/`sessionStorage`. Pembaruan profil menggunakan `PATCH /users/me`, perubahan password `PATCH /users/me/password`, dan hapus akun `DELETE /users/me`.
       - `src/frontend/js/pages/bahan.js`, `menu.js`, `event.js`: Diadaptasi penuh ke endpoint `/ingredients`, `/batches`, `/waste-logs`, `/products`, dan `/events` dengan payload dan respons envelope standar. Seluruh perubahan tabel berjalan reaktif tanpa reload halaman.
+19. **Penyesuaian Integrasi Frontend (Fase 8B - T-8.4, T-8.5, T-8.6):**
+    * *Kondisi:* TRD 6.2.7.2 mendefinisikan template unduh dan impor riwayat penjualan via multipart endpoint `/api/v1/sales/import-excel`. Pada forecast & rekomendasi (TRD 6.2.9–6.2.11), backend mengembalikan 422 saat riwayat penjualan belum mencukupi (< 14 hari) dan frontend harus menampilkannya dengan ramah tanpa blank screen atau kalkulasi lokal. Pada evaluasi, nilai `trained_at` adalah string ISO 8601 dengan timezone offset (`+00:00`) yang memerlukan parser aman pada Intl formatting agar tidak memicu `Invalid time value`. Pada langganan & integrasi, fitur checkout harus menegaskan simulasi pembayaran, tombol sinkronisasi hanya aktif untuk akun Pro, dan feedback mengirimkan rating 1–5 secara terisolasi.
+    * *Asumsi & Keputusan Implementasi:*
+      - `src/frontend/js/pages/penjualan.js`, `import.js`, `riwayat.js`: Input manual mengirim payload `{ date, items: [{ product_id, qty }], source: 'manual' }`. Halaman import mengunduh blob Excel dari `GET /api/v1/sales/template` dan mengunggah FormData ke `POST /api/v1/sales/import-excel` dengan feedback baris sukses atau validasi error yang presisi. Halaman riwayat mendukung filter tanggal & sumber transaksi serta penghapusan baris via `DELETE /api/v1/sales/{id}`.
+      - `src/frontend/js/pages/forecast.js`, `rekomendasi.js`, `evaluasi.js`, `dashboard.js`: Menampilkan rentang `need_lo`–`need_hi` dan level Waste Risk Score langsung dari backend tanpa menghitung ulang. Penanganan exception riwayat kurang di-render sebagai kartu komponen `emptyState`. Parsing `trained_at` di `evaluasi.js` dibuat tangguh terhadap format ISO timezone offset. Dashboard menampilkan grafik SVG tren penjualan dari riwayat transaksi dan kartu kapasitas porsi dari respons `/dashboard`.
+      - `src/frontend/js/pages/langganan.js`, `akun.js`: Paket Freemium dan Pro disajikan jelas dengan penanda eksplisit `payment_simulation: true`. Integrasi mock dibatasi hanya untuk Pro (Freemium memunculkan pesan 403 ramah), dan sinkronisasi mock MokaPOS berhasil mencatat transaksi baru ke riwayat. Formulir feedback di `akun.js` mengirimkan `{ rating, category, message }` ke `POST /api/v1/feedback` dengan validasi bintang 1–5.

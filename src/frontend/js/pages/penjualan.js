@@ -7,7 +7,15 @@ export default {
   async render(el, ctx) {
     el.innerHTML = loading(2);
     const T = todayStr();
-    const [products, sub] = await Promise.all([api('/products'), api('/subscription')]);
+    const [productsRes, subRes] = await Promise.all([
+      api('/products').catch(() => ({ items: [] })),
+      api('/subscription').catch(() => ({ role: 'freemium', quota: { used: 0, limit: 300 } })),
+    ]);
+
+    const products = Array.isArray(productsRes) ? productsRes : (productsRes?.items || []);
+    const sub = subRes || { role: 'freemium' };
+    const quota = sub.quota || { used: 0, limit: 300 };
+
     if (!products.length) {
       el.innerHTML = html`<div class="card">${emptyState('utensils', 'Belum ada menu', 'Tambahkan menu dan komposisinya sebelum mencatat penjualan.', html`<a class="btn" href="#/menu">Ke Menu & Resep</a>`)}</div>`;
       return;
@@ -16,10 +24,10 @@ export default {
     let date = T;
 
     el.innerHTML = html`<div class="stack" style="max-width:820px">
-      ${ctx.user.role === 'freemium'
+      ${ctx.user?.role === 'freemium'
         ? html`<div class="card card-flat" style="padding:14px">
-            <div class="row-between small"><span>Kuota Freemium bulan ini</span><b class="num">${sub.quota.used} / ${sub.quota.limit} transaksi</b></div>
-            <div class="progress ${sub.quota.used / sub.quota.limit > 0.9 ? 'danger' : sub.quota.used / sub.quota.limit > 0.7 ? 'warn' : ''}" style="margin-top:8px"><i style="width:${Math.min(100, (sub.quota.used / sub.quota.limit) * 100)}%"></i></div>
+            <div class="row-between small"><span>Kuota Freemium bulan ini</span><b class="num">${quota.used} / ${quota.limit} transaksi</b></div>
+            <div class="progress ${quota.used / quota.limit > 0.9 ? 'danger' : quota.used / quota.limit > 0.7 ? 'warn' : ''}" style="margin-top:8px"><i style="width:${Math.min(100, (quota.used / quota.limit) * 100)}%"></i></div>
             <p class="xs muted" style="margin-top:6px">1 transaksi = 1 baris menu per tanggal. Pengguna Pro tanpa batas dan bisa sinkron otomatis dari POS / aplikasi pesan antar.</p>
           </div>`
         : html`<div class="callout">${icon('plug')}<div>Akun Pro: penjualan dari kanal yang terhubung masuk otomatis lewat <a href="#/integrasi"><b>Sinkronisasi API</b></a>. Gunakan form ini untuk penjualan di luar kanal tersebut.</div></div>`}
@@ -50,16 +58,17 @@ export default {
 
     const update = () => {
       const qtyTotal = Object.values(counts).reduce((s, x) => s + x, 0);
-      const rev = products.reduce((s, p) => s + counts[p.id] * p.price, 0);
+      const rev = products.reduce((s, p) => s + (counts[p.id] || 0) * (p.price || 0), 0);
       el.querySelector('#sum').textContent = `${number(qtyTotal, 0)} porsi · ${rupiah(rev)}`;
     };
     const set = (id, v) => {
       counts[id] = Math.max(0, Math.round(Number(v) || 0));
-      el.querySelector(`input[data-id="${id}"]`).value = counts[id];
+      const inputEl = el.querySelector(`input[data-id="${id}"]`);
+      if (inputEl) inputEl.value = counts[id];
       update();
     };
-    el.querySelectorAll('[data-inc]').forEach((b) => (b.onclick = () => set(b.dataset.inc, counts[b.dataset.inc] + 1)));
-    el.querySelectorAll('[data-dec]').forEach((b) => (b.onclick = () => set(b.dataset.dec, counts[b.dataset.dec] - 1)));
+    el.querySelectorAll('[data-inc]').forEach((b) => (b.onclick = () => set(b.dataset.inc, (counts[b.dataset.inc] || 0) + 1)));
+    el.querySelectorAll('[data-dec]').forEach((b) => (b.onclick = () => set(b.dataset.dec, (counts[b.dataset.dec] || 0) - 1)));
     el.querySelectorAll('input[data-id]').forEach((i) => {
       i.oninput = () => {
         counts[i.dataset.id] = Math.max(0, Math.round(Number(i.value) || 0));
@@ -74,12 +83,15 @@ export default {
     };
     el.querySelector('#save').onclick = async (e) => {
       const btn = e.currentTarget;
-      const items = Object.entries(counts).filter(([, q]) => q > 0).map(([product_id, qty]) => ({ product_id, qty }));
+      const items = Object.entries(counts)
+        .filter(([, q]) => q > 0)
+        .map(([product_id, qty]) => ({ product_id: Number(product_id), qty: Number(qty) }));
       if (!items.length) return toast('Isi jumlah terjual minimal untuk satu menu.', 'error');
       btn.disabled = true;
       try {
-        const r = await api('/sales', { method: 'POST', body: { date, items } });
-        toast(`${r.total} porsi tercatat. Stok bahan diperbarui otomatis.`);
+        const r = await api('/sales', { method: 'POST', body: { date, items, source: 'manual' } });
+        const count = r?.recorded_count ?? r?.total ?? items.length;
+        toast(`${count} porsi tercatat. Stok bahan diperbarui otomatis.`);
         ctx.go('/riwayat');
       } catch (err) {
         toast(err.message, 'error');
