@@ -1,6 +1,6 @@
 # Panduan Rincian Tugas Implementasi (Task Breakdown) StockWise
 
-Dokumen ini adalah panduan kerja teknis komprehensif untuk merombak total backend StockWise dari prototipe Node.js/SQLite menjadi arsitektur modern berbasis FastAPI, PostgreSQL 16, dan Docker Compose lokal sesuai spesifikasi [TRD.md](file:///Users/heru/Development/StockWise/docs/TRD.md) dan [PRD.md](file:///Users/heru/Development/StockWise/docs/PRD.md).
+Dokumen ini adalah panduan kerja teknis komprehensif untuk merombak total backend StockWise dari prototipe Node.js/SQLite menjadi arsitektur modern berbasis FastAPI, PostgreSQL 16, dan Docker Compose lokal sesuai spesifikasi [TRD.md](TRD.md) dan [PRD.md](PRD.md).
 
 ---
 
@@ -29,8 +29,8 @@ Setelah tugas selesai diverifikasi dan dinyatakan lolos, centang kotak checkbox 
 | **Fase 6: Dashboard** | Agregasi analitik inventaris dan kartu kapasitas porsi menu produk | 1 | Endpoint dashboard menyajikan grafik tren penjualan dan ketersediaan porsi menu secara instan |
 | **Fase 7: Fitur Simulasi** | Menyediakan alur upgrade Pro, sinkronisasi mock data POS/ojol, dan feedback | 3 | Upgrade paket Pro langsung aktif, mock sync menyuntikkan pesanan, dan teks feedback tersimpan |
 | **Fase 8: Integrasi Frontend** | Menghubungkan client PWA `src/frontend/js/` ke base path `/api/v1` dan response envelope | 6 | Seluruh halaman UI PWA berfungsi mulus menggunakan backend FastAPI lokal |
-| **Fase 8C: Perbaikan UI Frontend** | Audit visual, memperbaiki akar masalah CSS/ikon/layout, merapikan komponen dan halaman, serta responsif | 10 | Skrip pemeriksa UI melaporkan 0 temuan di 3 ukuran layar, tanpa error konsol, dan screenshot 14 halaman sudah ditinjau |
-| **Fase 9: Pengujian & Demo** | Otomasi test suite (unit & API), seeding data awal, dan pembersihan artefak lama | 5 | Seluruh tes Pytest lolos (`pytest tests/`), data seed terisi, dan checklist demo 13 UC tervalidasi |
+| **Fase 9: Perbaikan UI Frontend** | Audit visual, memperbaiki akar masalah CSS/ikon/layout, merapikan komponen dan halaman, serta responsif | 10 | Skrip pemeriksa UI melaporkan 0 temuan di 3 ukuran layar, tanpa error konsol, dan screenshot 14 halaman sudah ditinjau |
+| **Fase 10: Pengujian & Demo** | Otomasi test suite (unit & API), seeding data awal, dan pembersihan artefak lama | 5 | Seluruh tes Pytest lolos (`pytest tests/`), data seed terisi, dan checklist demo 13 UC tervalidasi |
 
 ---
 
@@ -776,17 +776,17 @@ Tujuan: Menyesuaikan antarmuka Vanilla JS / PWA di `src/frontend/` agar kompatib
 
 ---
 
-### Fase 8C: Perbaikan UI & Konsistensi Visual Frontend
+### Fase 9: Perbaikan UI & Konsistensi Visual Frontend
 Tujuan: Memperbaiki tampilan antarmuka `src/frontend/` yang rusak setelah Fase 8 (contoh: ikon chevron pada checklist onboarding Beranda membesar memenuhi kartu dan menekan teks deskripsi menjadi kolom sempit). Fase ini hanya menyentuh lapisan tampilan (HTML, CSS, dan JS presentasi).
 
-**Aturan khusus Fase 8C**
+**Aturan khusus Fase 9**
 1. Jangan mengubah logika bisnis, endpoint, payload, atau `src/frontend/js/api.js`. Jika perbaikan tampilan menuntut perubahan di luar lapisan tampilan, catat di bagian "Temuan dan Keputusan yang Dibutuhkan" dan jangan dikerjakan.
 2. Perbaiki **akar masalah** (aturan CSS global atau komponen bersama) sebelum menambal halaman satu per satu. Satu perbaikan global yang benar lebih baik daripada belasan penimpaan per halaman.
 3. Jangan menambah library atau framework CSS/JS baru. Jangan mengubah identitas visual (palet warna, font, logo) kecuali bagian itu sendiri yang rusak.
-4. Setiap tugas hanya boleh dinyatakan selesai jika: (a) skrip pemeriksa UI (`tests/e2e/ui_check.js`, dibuat di T-8C.1) menghasilkan 0 temuan pada halaman yang dikerjakan, (b) tidak ada `console.error`, dan (c) screenshot sesudah perbaikan sudah **dibuka dan dideskripsikan** dalam laporan (apa yang terlihat, bukan sekadar nama file).
+4. Setiap tugas hanya boleh dinyatakan selesai jika: (a) skrip pemeriksa UI (`tests/e2e/ui_check.js`, dibuat di T-9.1) menghasilkan 0 temuan pada halaman yang dikerjakan, (b) tidak ada `console.error`, dan (c) screenshot sesudah perbaikan sudah **dibuka dan dideskripsikan** dalam laporan (apa yang terlihat, bukan sekadar nama file).
 5. Screenshot disimpan di `tests/e2e/artifacts/` dengan pola `<id-tugas>_<halaman>_<lebar>.png` dan folder tersebut masuk `.gitignore`.
 
-- [ ] **T-8C.1 Audit visual semua halaman (hanya membaca, tanpa mengubah kode)**
+- [x] **T-9.1 Audit visual semua halaman (hanya membaca, tanpa mengubah kode)**
   * **Ukuran:** M
   * **Rujukan:** Fase 8 (T-8.1 sampai T-8.6); PRD UC-01 sampai UC-13
   * **Dependensi:** T-8.6
@@ -801,10 +801,10 @@ Tujuan: Memperbaiki tampilan antarmuka `src/frontend/` yang rusak setelah Fase 8
     * `docs/UI_AUDIT.md` ada dan memuat screenshot sebanyak 14 halaman × 3 lebar layar yang dirujuk, dan setiap temuan punya bukti.
     * Tidak ada file di `src/frontend/` yang berubah (`git status` hanya menunjukkan `tests/e2e/`, `docs/`, dan `.gitignore`).
 
-- [ ] **T-8C.2 Perbaiki akar masalah global: ukuran ikon dan layout dasar (CSS)**
+- [x] **T-9.2 Perbaiki akar masalah global: ukuran ikon dan layout dasar (CSS)**
   * **Ukuran:** M
   * **Rujukan:** `docs/UI_AUDIT.md` (akar masalah global); file di `src/frontend/css/`
-  * **Dependensi:** T-8C.1
+  * **Dependensi:** T-9.1
   * **File:** file CSS utama di `src/frontend/css/` (nama ditentukan dari audit), `src/frontend/index.html` jika urutan pemuatan CSS perlu diperbaiki
   * **Langkah:**
     1. Tentukan dari audit mengapa ikon SVG tidak punya ukuran (misalnya atribut `width` dan `height` tidak ada pada SVG yang dirender JS, kelas ukuran ikon tidak cocok dengan kelas yang dipakai di HTML hasil render, atau aturan CSS tertimpa).
@@ -817,10 +817,10 @@ Tujuan: Memperbaiki tampilan antarmuka `src/frontend/` yang rusak setelah Fase 8
     * Pada lebar 1280 px, teks deskripsi item checklist berlebar minimal 200 px dan tampil dalam satu atau dua baris, bukan kolom sempit.
     * Tidak ada 404 untuk file CSS, font, atau gambar pada seluruh halaman.
 
-- [ ] **T-8C.3 Rapikan komponen UI bersama (toast, modal, tabel, form, tombol, badge, empty state)**
+- [x] **T-9.3 Rapikan komponen UI bersama (toast, modal, tabel, form, tombol, badge, empty state)**
   * **Ukuran:** M
   * **Rujukan:** `docs/UI_AUDIT.md`; kode komponen bersama di `src/frontend/js/` dan `src/frontend/css/` (lokasi ditentukan dari audit)
-  * **Dependensi:** T-8C.2
+  * **Dependensi:** T-9.2
   * **File:** file komponen bersama di `src/frontend/js/` dan CSS terkait
   * **Langkah:**
     1. Toast: posisi tidak menutupi tombol utama atau konten penting, hilang otomatis, dan teks tidak terpotong. Toast berjenis sukses, error, dan peringatan punya warna yang jelas.
@@ -832,10 +832,10 @@ Tujuan: Memperbaiki tampilan antarmuka `src/frontend/` yang rusak setelah Fase 8
     * `ui_check.js` memberi 0 temuan pada seluruh halaman di lebar 1280 px.
     * Screenshot satu toast, satu modal, satu tabel, satu empty state, dan satu badge dari tiap jenis sudah ditinjau dan dideskripsikan di laporan.
 
-- [ ] **T-8C.4 Perbaiki Beranda, onboarding, dan halaman Auth**
+- [x] **T-9.4 Perbaiki Beranda, onboarding, dan halaman Auth**
   * **Ukuran:** S
   * **Rujukan:** PRD UC-01, UC-02; `docs/UI_AUDIT.md`
-  * **Dependensi:** T-8C.3
+  * **Dependensi:** T-9.3
   * **File:** `src/frontend/js/pages/auth.js`, `src/frontend/js/pages/onboarding.js`, `src/frontend/js/pages/dashboard.js` (bagian Beranda/checklist), CSS terkait
   * **Langkah:**
     1. Item checklist onboarding menampilkan ikon, judul langkah, deskripsi, dan panah dengan susunan rapi. Periksa apakah judul langkah ikut hilang pada tampilan sebelumnya. Jika ya, perbaiki.
@@ -845,10 +845,10 @@ Tujuan: Memperbaiki tampilan antarmuka `src/frontend/` yang rusak setelah Fase 8
     * Akun baru: seluruh item checklist terbaca penuh pada lebar 1280, 768, dan 390 px, dan `ui_check.js` memberi 0 temuan.
     * Registrasi dengan email yang sudah terdaftar dan login dengan password salah masing-masing menampilkan pesan error yang jelas di form.
 
-- [ ] **T-8C.5 Perbaiki halaman Data Master (Stok & Bahan, Menu & Resep, Event)**
+- [x] **T-9.5 Perbaiki halaman Data Master (Stok & Bahan, Menu & Resep, Event)**
   * **Ukuran:** M
   * **Rujukan:** PRD UC-02; TRD 6.2.3, 6.2.4, 6.2.8
-  * **Dependensi:** T-8C.3
+  * **Dependensi:** T-9.3
   * **File:** `src/frontend/js/pages/bahan.js`, `menu.js`, `event.js`, CSS terkait
   * **Langkah:**
     1. Tabel bahan dan stok: kolom satuan, kategori (segar atau tahan lama), umur simpan, dan stok terbaca rapi, dan form tambah atau ubah tidak meluber.
@@ -858,10 +858,10 @@ Tujuan: Memperbaiki tampilan antarmuka `src/frontend/` yang rusak setelah Fase 8
   * **Kriteria Selesai:**
     * Pada data uji dan akun kosong, ketiga halaman memberi 0 temuan di `ui_check.js` pada tiga lebar layar, dan screenshotnya sudah ditinjau.
 
-- [ ] **T-8C.6 Perbaiki halaman Transaksi (Input Penjualan, Import Excel, Riwayat)**
+- [ ] **T-9.6 Perbaiki halaman Transaksi (Input Penjualan, Import Excel, Riwayat)**
   * **Ukuran:** M
   * **Rujukan:** PRD UC-03, UC-04, UC-10; TRD 6.2.7
-  * **Dependensi:** T-8C.3
+  * **Dependensi:** T-9.3
   * **File:** `src/frontend/js/pages/penjualan.js`, `import.js`, `riwayat.js`, CSS terkait
   * **Langkah:**
     1. Form input penjualan: baris produk dan jumlah rapi, tombol tambah baris jelas, dan tanggal bawaan terisi hari ini.
@@ -870,10 +870,10 @@ Tujuan: Memperbaiki tampilan antarmuka `src/frontend/` yang rusak setelah Fase 8
   * **Kriteria Selesai:**
     * Ketiga halaman memberi 0 temuan di `ui_check.js` pada tiga lebar layar, termasuk setelah mengimpor berkas contoh dengan baris valid dan tidak valid.
 
-- [ ] **T-8C.7 Perbaiki halaman Analitik (Dashboard, Forecast, Rekomendasi, Evaluasi)**
+- [ ] **T-9.7 Perbaiki halaman Analitik (Dashboard, Forecast, Rekomendasi, Evaluasi)**
   * **Ukuran:** M
   * **Rujukan:** PRD UC-05, UC-06, UC-07, UC-09; TRD 6.2.9 sampai 6.2.12
-  * **Dependensi:** T-8C.3
+  * **Dependensi:** T-9.3
   * **File:** `src/frontend/js/pages/dashboard.js`, `forecast.js`, `rekomendasi.js`, `evaluasi.js`, CSS terkait
   * **Langkah:**
     1. Grafik SVG: ukuran mengikuti lebar kontainer (`viewBox` dan `preserveAspectRatio` tepat), label sumbu terbaca, dan tidak terpotong saat layar sempit.
@@ -885,10 +885,10 @@ Tujuan: Memperbaiki tampilan antarmuka `src/frontend/` yang rusak setelah Fase 8
     * Dengan data uji 28 hari, keempat halaman tampil tanpa temuan di `ui_check.js` pada tiga lebar layar, dan tidak ada `console.error`.
     * Dengan akun kosong, ketiga halaman yang membutuhkan riwayat menampilkan *empty state* yang jelas.
 
-- [ ] **T-8C.8 Perbaiki halaman Akun dan Langganan (Paket, Sinkronisasi API, Profil, Feedback)**
+- [ ] **T-9.8 Perbaiki halaman Akun dan Langganan (Paket, Sinkronisasi API, Profil, Feedback)**
   * **Ukuran:** S
   * **Rujukan:** PRD UC-11, UC-12, UC-13; TRD 6.2.13, 6.2.14
-  * **Dependensi:** T-8C.3
+  * **Dependensi:** T-9.3
   * **File:** `src/frontend/js/pages/langganan.js`, `akun.js`, CSS terkait
   * **Langkah:**
     1. Kartu paket Freemium dan Pro sejajar rapi dan sama tinggi, dengan penanda jelas bahwa pembayaran adalah simulasi.
@@ -898,10 +898,10 @@ Tujuan: Memperbaiki tampilan antarmuka `src/frontend/` yang rusak setelah Fase 8
   * **Kriteria Selesai:**
     * Pada akun Freemium dan akun Pro, kedua halaman memberi 0 temuan di `ui_check.js` pada tiga lebar layar.
 
-- [ ] **T-8C.9 Responsif dan PWA (sidebar, navigasi mobile, ukuran tap, manifest)**
+- [ ] **T-9.9 Responsif dan PWA (sidebar, navigasi mobile, ukuran tap, manifest)**
   * **Ukuran:** M
   * **Rujukan:** `docs/UI_AUDIT.md`; `src/frontend/index.html`, `manifest.webmanifest`
-  * **Dependensi:** T-8C.4, T-8C.5, T-8C.6, T-8C.7, T-8C.8
+  * **Dependensi:** T-9.4, T-9.5, T-9.6, T-9.7, T-9.8
   * **File:** CSS utama, `src/frontend/index.html`, JS navigasi (lokasi dari audit), `manifest.webmanifest`
   * **Langkah:**
     1. Pada lebar di bawah titik putus yang dipilih (misalnya 900 px), sidebar berubah menjadi menu yang bisa dibuka dan ditutup (drawer atau bar bawah) dan konten memakai lebar penuh. Menu tertutup otomatis setelah memilih halaman.
@@ -912,15 +912,15 @@ Tujuan: Memperbaiki tampilan antarmuka `src/frontend/` yang rusak setelah Fase 8
     * `ui_check.js` memberi 0 temuan pada seluruh 14 halaman di lebar 1280, 768, dan 390 px.
     * Pada 390 px, navigasi bisa dioperasikan hanya dengan sentuhan: buka menu, pindah halaman, dan menu tertutup kembali.
 
-- [ ] **T-8C.10 Verifikasi akhir Fase 8C dan pengecekan ulang skenario sesi**
+- [ ] **T-9.10 Verifikasi akhir Fase 9 dan pengecekan ulang skenario sesi**
   * **Ukuran:** M
   * **Rujukan:** `docs/UI_AUDIT.md`; PRD UC-01
-  * **Dependensi:** T-8C.9
+  * **Dependensi:** T-9.9
   * **File:** `docs/UI_AUDIT.md` (diperbarui), `tests/e2e/artifacts/` (screenshot akhir)
   * **Langkah:**
-    1. Ulangi seluruh pemeriksaan T-8C.1 (14 halaman × 3 lebar layar × akun berisi dan akun kosong). Perbarui `docs/UI_AUDIT.md`: tandai setiap temuan sebagai Selesai (dengan bukti sesudah perbaikan) atau Ditunda (dengan alasan).
+    1. Ulangi seluruh pemeriksaan T-9.1 (14 halaman × 3 lebar layar × akun berisi dan akun kosong). Perbarui `docs/UI_AUDIT.md`: tandai setiap temuan sebagai Selesai (dengan bukti sesudah perbaikan) atau Ditunda (dengan alasan).
     2. Buka dan tinjau setiap screenshot akhir. Untuk tiap halaman, tulis satu kalimat tentang apa yang terlihat. Laporan tanpa deskripsi hasil tinjauan dianggap belum lengkap.
-    3. Ulangi dua skenario sesi dari Fase 8A yang buktinya sebelumnya tidak menunjukkan isi yang dimaksud: (a) buka panel Application di DevTools dan tunjukkan cookie sesi berstatus `HttpOnly` serta `localStorage` dan `sessionStorage` tanpa token, (b) muat ulang halaman dan buktikan sesi bertahan setelah toast hilang. Screenshot keduanya harus memperlihatkan panel atau halaman yang dimaksud.
+    3. Ulangi dua skenario sesi dari pengujian browser Fase 8 yang buktinya sebelumnya tidak menunjukkan isi yang dimaksud: (a) buka panel Application di DevTools dan tunjukkan cookie sesi berstatus `HttpOnly` serta `localStorage` dan `sessionStorage` tanpa token, (b) muat ulang halaman dan buktikan sesi bertahan setelah toast hilang. Screenshot keduanya harus memperlihatkan panel atau halaman yang dimaksud.
     4. Jalankan seluruh `pytest` untuk memastikan perubahan frontend tidak memengaruhi backend.
     5. Tulis daftar temuan yang masih butuh keputusan manusia (misalnya selera visual) di "Temuan dan Keputusan yang Dibutuhkan".
   * **Kriteria Selesai:**
@@ -930,10 +930,10 @@ Tujuan: Memperbaiki tampilan antarmuka `src/frontend/` yang rusak setelah Fase 8
 
 ---
 
-### Fase 9: Pengujian, Data Seeding, & Finalisasi Demo
+### Fase 10: Pengujian, Data Seeding, & Finalisasi Demo
 Tujuan: Mengotomasi rangkaian tes unit dan API, menyediakan skrip data seed realistis untuk pengujian live demo, membersihkan artefak Node.js lama, dan memvalidasi seluruh 13 Use Case.
 
-- [ ] **T-9.1 Otomasi tes unit algoritma (`test_forecast_math.py`, `test_fefo.py`)**
+- [ ] **T-10.1 Otomasi tes unit algoritma (`test_forecast_math.py`, `test_fefo.py`)**
   * **Ukuran:** S
   * **Rujukan:** TRD 4.2; PRD UC-06, UC-07, UC-08
   * **Dependensi:** T-5.1, T-5.2
@@ -946,7 +946,7 @@ Tujuan: Mengotomasi rangkaian tes unit dan API, menyediakan skrip data seed real
   * **Kriteria Selesai:**
     * Perintah `docker compose -f deploy/compose/docker-compose.dev.yml run --rm api pytest tests/unit/lib` lolos 100% (semua assertions passed).
 
-- [ ] **T-9.2 Otomasi tes integrasi API (`test_auth_api.py`, `test_forecast_api.py`)**
+- [ ] **T-10.2 Otomasi tes integrasi API (`test_auth_api.py`, `test_forecast_api.py`)**
   * **Ukuran:** M
   * **Rujukan:** TRD 4.2, TRD 6.2.1, TRD 6.2.9; PRD UC-01, UC-05
   * **Dependensi:** T-2.8, T-5.3
@@ -958,7 +958,7 @@ Tujuan: Mengotomasi rangkaian tes unit dan API, menyediakan skrip data seed real
   * **Kriteria Selesai:**
     * Perintah `docker compose -f deploy/compose/docker-compose.dev.yml run --rm api pytest tests/api` berjalan sukses tanpa error.
 
-- [ ] **T-9.3 Skrip seeding data awal realistis untuk demo (`seed.py`)**
+- [ ] **T-10.3 Skrip seeding data awal realistis untuk demo (`seed.py`)**
   * **Ukuran:** M
   * **Rujukan:** TRD 5, TRD 8.5; kode lama `server/seed.js`
   * **Dependensi:** T-1.6, T-4.1
@@ -974,10 +974,10 @@ Tujuan: Mengotomasi rangkaian tes unit dan API, menyediakan skrip data seed real
   * **Kriteria Selesai:**
     * Perintah `docker compose -f deploy/compose/docker-compose.dev.yml run --rm api python -m app.seed` sukses menyuntikkan seluruh data contoh tanpa pelanggaran integrity constraint.
 
-- [ ] **T-9.4 Pembersihan kode Node.js lama & pembaruan panduan operasional (`README.md`)**
+- [ ] **T-10.4 Pembersihan kode Node.js lama & pembaruan panduan operasional (`README.md`)**
   * **Ukuran:** S
   * **Rujukan:** TRD 1.2, TRD 8.5
-  * **Dependensi:** T-9.2, T-9.3, T-8.5
+  * **Dependensi:** T-10.2, T-10.3, T-8.5
   * **File:** `README.md`, penghapusan folder `server/`, `node_modules/`, `package.json`, `package-lock.json`, `render.yaml`
   * **Langkah:**
     1. Hapus seluruh artefak Node.js lama dari root: folder `server/`, `node_modules/`, `package.json`, `package-lock.json`, dan `render.yaml`.
@@ -991,10 +991,10 @@ Tujuan: Mengotomasi rangkaian tes unit dan API, menyediakan skrip data seed real
     * Direktori `server/` dan `package.json` sudah tidak ada di repositori.
     * Menjalankan instruksi di `README.md` dari awal pada repositori bersih berhasil menampilkan aplikasi web yang berjalan normal.
 
-- [ ] **T-9.5 Verifikasi end-to-end checklist demo 13 Use Case**
+- [ ] **T-10.5 Verifikasi end-to-end checklist demo 13 Use Case**
   * **Ukuran:** S
   * **Rujukan:** PRD 5.1 (UC-01 s/d UC-13); TRD 6.2
-  * **Dependensi:** T-9.4, T-8C.10
+  * **Dependensi:** T-10.4, T-9.10
   * **File:** `docs/CHECKLIST_DEMO.md` (baru)
   * **Langkah:**
     1. Buat checklist pengujian manual interaktif di file `docs/CHECKLIST_DEMO.md` mencakup skenario pengujian 13 Use Case.
@@ -1011,14 +1011,14 @@ Tabel ini memastikan tidak ada kebutuhan fungsional dari PRD yang terlewat dalam
 
 | Kode Use Case | Nama Use Case (PRD 5.1) | ID Tugas yang Mengimplementasikan | Checkpoint Verifikasi |
 |---|---|---|---|
-| **UC-01** | Register dan Sign In | T-2.5, T-2.6, T-2.7, T-2.8, T-8.2, T-9.2 | Akun baru terdaftar, login menghasilkan cookie HttpOnly, refresh token sukses |
+| **UC-01** | Register dan Sign In | T-2.5, T-2.6, T-2.7, T-2.8, T-8.2, T-10.2 | Akun baru terdaftar, login menghasilkan cookie HttpOnly, refresh token sukses |
 | **UC-02** | Atur profil usaha dan bahan | T-1.5, T-3.1, T-3.2, T-8.3 | Master bahan (segar/tahan lama) dan menu resep tersimpan per user_id |
 | **UC-03** | Input penjualan dan stok | T-1.5, T-3.3, T-3.4, T-4.1, T-8.4 | Penjualan memotong batch aktif via FEFO, stok masuk dan limbah tercatat |
 | **UC-04** | Import data Excel | T-4.2, T-4.3, T-8.4 | Download template Excel dan upload file berhasil divalidasi in-memory |
-| **UC-05** | Lihat forecast kebutuhan | T-5.1, T-5.3, T-8.5, T-9.2 | Tampil rentang proyeksi kebutuhan bahan (mis. ayam 18–22 kg) |
-| **UC-06** | Lihat rekomendasi pembelian | T-5.2, T-5.4, T-8.5, T-9.1 | Saran beli bersih = kebutuhan - stok layak pakai (contoh uji: 13–17 kg) |
-| **UC-07** | Waste Risk Score | T-5.2, T-5.4, T-8.5, T-9.1 | Forward simulation 60 hari menampilkan status risiko rendah/sedang/tinggi |
-| **UC-08** | Hitung forecast | T-1.5, T-3.5, T-5.1, T-5.3, T-9.1 | Model time-series mempelajari alpha optimal, pola hari, dan event multiplier |
+| **UC-05** | Lihat forecast kebutuhan | T-5.1, T-5.3, T-8.5, T-10.2 | Tampil rentang proyeksi kebutuhan bahan (mis. ayam 18–22 kg) |
+| **UC-06** | Lihat rekomendasi pembelian | T-5.2, T-5.4, T-8.5, T-10.1 | Saran beli bersih = kebutuhan - stok layak pakai (contoh uji: 13–17 kg) |
+| **UC-07** | Waste Risk Score | T-5.2, T-5.4, T-8.5, T-10.1 | Forward simulation 60 hari menampilkan status risiko rendah/sedang/tinggi |
+| **UC-08** | Hitung forecast | T-1.5, T-3.5, T-5.1, T-5.3, T-10.1 | Model time-series mempelajari alpha optimal, pola hari, dan event multiplier |
 | **UC-09** | Pantau dashboard inventory | T-6.1, T-8.5 | Dashboard menampilkan tren penjualan dan porsi produk yang dapat dibuat |
 | **UC-10** | Lihat riwayat transaksi | T-4.1, T-4.3, T-5.5, T-8.4 | Transaksi historis bersih tampil di UI dan menjadi data latih evaluasi |
 | **UC-11** | Berlangganan paket Pro | T-7.1, T-8.6 | Tombol checkout simulasi mengubah role pengguna menjadi Pro secara instan |
@@ -1080,14 +1080,16 @@ Berikut adalah daftar temuan teknis serta parameter bisnis yang belum ditetapkan
 16. **Kontrak Integration (Fase 7):**
     * *Kondisi:* TRD 6.2.14 menetapkan `GET /integrations` hanya butuh login, sedangkan T-7.2 menyebut seluruh endpoint dilindungi Pro. Pesan 403 TRD berbeda dari pesan default `require_pro_plan`. Skema `sales` tidak punya kolom tanggal/waktu pesanan selain `date`.
     * *Asumsi & Keputusan Implementasi:* `GET` terbuka untuk semua pengguna login; `connect` dan `sync` memakai `require_pro_plan` dengan pesan TRD. Mock sync membuat 8 baris `sales` (produk aktif acak, qty 1–3, tanggal hari ini WIB, `source = provider`); `synced_orders` = jumlah baris, 0 bila tak ada produk aktif. `api_key` disimpan apa adanya (simulasi) dan tidak pernah dikembalikan di respons. Kuota Freemium 300 transaksi tidak diterapkan pada sync (hanya Pro yang dapat sync).
-17. **Tes API dan rate limit:** Tes yang login berulang melebihi batas 5 req/menit pada `/auth/*`. `tests/conftest.py` kini memanggil `rate_limiter.reset()` sebelum tiap tes; kode produksi tidak diubah.
-18. **Penyesuaian Integrasi Frontend (Fase 8A - T-8.1, T-8.2, T-8.3):**
+17. **Tes API dan rate limit:**
+    * *Kondisi:* Tes yang login berulang melebihi batas 5 req/menit pada `/auth/*`.
+    * *Asumsi & Keputusan Implementasi:* `tests/conftest.py` kini memanggil `rate_limiter.reset()` sebelum tiap tes; kode produksi tidak diubah.
+18. **Penyesuaian Integrasi Frontend (Fase 8 - T-8.1 sampai T-8.3):**
     * *Kondisi:* TRD 4.3 poin 7 & 6.1 mensyaratkan autentikasi berbasis HttpOnly cookie dengan penanganan refresh 401 dan rate limit 429. Halaman master menu lama menggunakan format `recipes` array sedangkan TRD 6.2.4 menggunakan `recipe`. Pada `event.js`, input persentase dampak menggunakan slider/number yang perlu sinkron dengan backend `multiplier = 1.0 + pct/100`.
     * *Asumsi & Keputusan Implementasi:*
       - `src/frontend/js/api.js`: Konfigurasi base path menunjuk ke `http://localhost:8000/api/v1` dengan `credentials: 'include'` aktif di seluruh request. Interceptor 401 mengimplementasikan lock single-flight refresh dan mengecualikan `/auth/login`, `/auth/register`, `/auth/refresh`, `/auth/logout` dari rekursi refresh. Penanganan 429 mengekstrak header `Retry-After` dan memicu toast "Terlalu banyak permintaan. Silakan tunggu X detik".
       - `src/frontend/js/pages/auth.js` & `akun.js`: Token dihapus total dari `localStorage`/`sessionStorage`. Pembaruan profil menggunakan `PATCH /users/me`, perubahan password `PATCH /users/me/password`, dan hapus akun `DELETE /users/me`.
       - `src/frontend/js/pages/bahan.js`, `menu.js`, `event.js`: Diadaptasi penuh ke endpoint `/ingredients`, `/batches`, `/waste-logs`, `/products`, dan `/events` dengan payload dan respons envelope standar. Seluruh perubahan tabel berjalan reaktif tanpa reload halaman.
-19. **Penyesuaian Integrasi Frontend (Fase 8B - T-8.4, T-8.5, T-8.6):**
+19. **Penyesuaian Integrasi Frontend (Fase 8 - T-8.4 sampai T-8.6):**
     * *Kondisi:* TRD 6.2.7.2 mendefinisikan template unduh dan impor riwayat penjualan via multipart endpoint `/api/v1/sales/import-excel`. Pada forecast & rekomendasi (TRD 6.2.9–6.2.11), backend mengembalikan 422 saat riwayat penjualan belum mencukupi (< 14 hari) dan frontend harus menampilkannya dengan ramah tanpa blank screen atau kalkulasi lokal. Pada evaluasi, nilai `trained_at` adalah string ISO 8601 dengan timezone offset (`+00:00`) yang memerlukan parser aman pada Intl formatting agar tidak memicu `Invalid time value`. Pada langganan & integrasi, fitur checkout harus menegaskan simulasi pembayaran, tombol sinkronisasi hanya aktif untuk akun Pro, dan feedback mengirimkan rating 1–5 secara terisolasi.
     * *Asumsi & Keputusan Implementasi:*
       - `src/frontend/js/pages/penjualan.js`, `import.js`, `riwayat.js`: Input manual mengirim payload `{ date, items: [{ product_id, qty }], source: 'manual' }`. Halaman import mengunduh blob Excel dari `GET /api/v1/sales/template` dan mengunggah FormData ke `POST /api/v1/sales/import-excel` dengan feedback baris sukses atau validasi error yang presisi. Halaman riwayat mendukung filter tanggal & sumber transaksi serta penghapusan baris via `DELETE /api/v1/sales/{id}`.

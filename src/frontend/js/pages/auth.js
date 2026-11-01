@@ -45,6 +45,7 @@ export const login = {
     const doLogin = async (email, password, btn) => {
       err.textContent = '';
       btn.disabled = true;
+      btn.classList.add('loading');
       try {
         const res = await api('/auth/login', { method: 'POST', body: { email, password } });
         const user = res?.user || res;
@@ -60,6 +61,7 @@ export const login = {
         err.textContent = e.message;
       } finally {
         btn.disabled = false;
+        btn.classList.remove('loading');
       }
     };
     form.onsubmit = (e) => {
@@ -164,6 +166,7 @@ export const register = {
         }
         const btn = form.querySelector('[type=submit]');
         btn.disabled = true;
+        btn.classList.add('loading');
         btn.textContent = data.seed_demo ? 'Menyiapkan data contoh…' : 'Membuat akun…';
         try {
           const payload = {
@@ -197,6 +200,7 @@ export const register = {
           }
         } finally {
           btn.disabled = false;
+          btn.classList.remove('loading');
         }
       };
       form.querySelector('input:not([type=radio]):not([type=checkbox])')?.focus();

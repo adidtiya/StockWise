@@ -113,11 +113,12 @@ export default {
                   <div class="right" style="min-width:86px"><b class="num">${signedPct(e.impact)}</b><div class="xs muted">${l ? `data: ${signedPct(l.factor)}` : 'default'}</div></div>
                 </div>`;
               })}</div>`
-            : emptyState('calendar', 'Tidak ada event', 'Tambahkan event usaha seperti pesanan besar atau bazar.')}
+            : emptyState('calendar', 'Tidak ada event', 'Tambahkan event usaha seperti pesanan besar, libur toko, atau tanggal gajian.', html`<button class="btn" id="empty-add-ev">${icon('plus')}Tambah event</button>`)}
         </div>
       </div>`;
       el.querySelectorAll('[data-v]').forEach((b) => (b.onclick = () => ((view = b.dataset.v), draw())));
       el.querySelectorAll('[data-id]').forEach((r) => (r.onclick = () => editEvent(events.find((e) => e.id === +r.dataset.id), reload)));
+      el.querySelector('#empty-add-ev')?.addEventListener('click', () => editEvent(null, reload));
     };
     await reload();
   },

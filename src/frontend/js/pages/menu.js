@@ -8,7 +8,7 @@ async function editProduct(product, ings, reload) {
       const ing = ings.find((i) => i.id === +r.ingredient_id);
       return html`<div class="row" style="gap:8px">
         <select class="input grow" data-k="${k}" data-f="ingredient_id">${ings.map((i) => html`<option value="${i.id}" ${+r.ingredient_id === i.id ? 'selected' : ''}>${i.name}</option>`)}</select>
-        <div class="input-group" style="width:150px"><input class="input" data-k="${k}" data-f="qty" inputmode="decimal" value="${r.qty}" placeholder="0" /><span class="suffix">${ing?.unit || ''}</span></div>
+        <div class="input-group" style="width:130px;flex:none"><input class="input" data-k="${k}" data-f="qty" inputmode="decimal" value="${r.qty}" placeholder="0" /><span class="suffix">${ing?.unit || ''}</span></div>
         <button type="button" class="icon-btn" data-rm="${k}" aria-label="Hapus bahan">${icon('x')}</button>
       </div>`;
     });

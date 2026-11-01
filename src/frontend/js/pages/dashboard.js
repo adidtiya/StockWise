@@ -35,6 +35,12 @@ export default {
           <p class="muted" style="margin-top:6px">Lengkapi data usaha agar StockWise bisa mulai memperkirakan kebutuhan bahan baku dan meminimalkan limbah.</p>
         </div>
         <div class="card">
+          <div class="card-head" style="margin-bottom:8px">
+            <div>
+              <h3 style="font-size:16px;font-weight:700">Langkah Memulai</h3>
+              <p class="muted small">Lengkapi data usaha berikut untuk mulai mengaktifkan peramalan otomatis</p>
+            </div>
+          </div>
           <div class="stack">
             ${[
               ['box', 'Daftarkan bahan baku', 'Nama, satuan, kategori segar / tahan lama, dan umur simpan.', '#/bahan', d.counts.ingredients > 0],
@@ -43,7 +49,10 @@ export default {
             ].map(
               ([ico, t, s, href, done]) => html`<a class="list-item clickable" href="${href}" style="text-decoration:none;color:inherit">
                 <div class="avatar" style="${done ? 'background:var(--ok-bg);color:var(--ok)' : ''}">${icon(done ? 'check' : ico)}</div>
-                <div class="grow"><div class="title">${t}</div><div class="meta">${s}</div></div>
+                <div class="grow">
+                  <div class="title" style="display:flex;align-items:center;gap:8px">${t} ${done ? html`<span class="badge ok" style="font-size:11px;height:20px;padding:0 6px">Selesai</span>` : ''}</div>
+                  <div class="meta">${s}</div>
+                </div>
                 ${icon('chevronRight')}
               </a>`
             )}

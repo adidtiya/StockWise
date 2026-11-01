@@ -144,6 +144,7 @@ export const BUSINESS_TYPES = { warung: 'Warung', rumah_makan: 'Rumah Makan', ka
 // ---------- Toast ----------
 export function toast(message, type = 'success') {
   const box = document.getElementById('toasts');
+  if (!box) return;
   const el = document.createElement('div');
   el.className = `toast ${type}`;
   el.textContent = message;
@@ -152,7 +153,7 @@ export function toast(message, type = 'success') {
     el.style.transition = 'opacity .3s';
     el.style.opacity = '0';
     setTimeout(() => el.remove(), 300);
-  }, type === 'error' ? 4800 : 3000);
+  }, type === 'error' ? 4800 : type === 'warning' ? 4000 : 3000);
 }
 
 // ---------- Modal ----------
@@ -170,6 +171,9 @@ export function modal({ title, body, actions = [], wide = false, onMount }) {
     const close = (val) => {
       back.remove();
       document.removeEventListener('keydown', onKey);
+      if (!document.querySelector('.modal-backdrop')) {
+        document.body.classList.remove('modal-open');
+      }
       resolve(val);
     };
     const onKey = (e) => e.key === 'Escape' && close(null);
@@ -191,6 +195,7 @@ export function modal({ title, body, actions = [], wide = false, onMount }) {
         }
       };
     });
+    document.body.classList.add('modal-open');
     document.body.appendChild(back);
     onMount?.(back, close);
     back.querySelector('input:not([type=hidden]), select, textarea')?.focus();
