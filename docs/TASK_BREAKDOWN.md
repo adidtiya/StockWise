@@ -1007,23 +1007,23 @@ Tujuan: Mengotomasi rangkaian tes unit dan API, menyediakan skrip data seed real
 
 ## 4. Matriks Keterlacakan (Traceability Matrix UC ke Tugas)
 
-Tabel ini memastikan tidak ada kebutuhan fungsional dari PRD yang terlewat dalam rincian tugas implementasi:
+Tabel ini memastikan tidak ada kebutuhan fungsional dari PRD yang terlewat dalam rincian tugas implementasi, mencakup perbaikan visual frontend (Fase 9), pengujian menyeluruh, dan checklist demo 13 Use Case (Fase 10):
 
 | Kode Use Case | Nama Use Case (PRD 5.1) | ID Tugas yang Mengimplementasikan | Checkpoint Verifikasi |
 |---|---|---|---|
-| **UC-01** | Register dan Sign In | T-2.5, T-2.6, T-2.7, T-2.8, T-8.2, T-10.2 | Akun baru terdaftar, login menghasilkan cookie HttpOnly, refresh token sukses |
-| **UC-02** | Atur profil usaha dan bahan | T-1.5, T-3.1, T-3.2, T-8.3 | Master bahan (segar/tahan lama) dan menu resep tersimpan per user_id |
-| **UC-03** | Input penjualan dan stok | T-1.5, T-3.3, T-3.4, T-4.1, T-8.4 | Penjualan memotong batch aktif via FEFO, stok masuk dan limbah tercatat |
-| **UC-04** | Import data Excel | T-4.2, T-4.3, T-8.4 | Download template Excel dan upload file berhasil divalidasi in-memory |
-| **UC-05** | Lihat forecast kebutuhan | T-5.1, T-5.3, T-8.5, T-10.2 | Tampil rentang proyeksi kebutuhan bahan (mis. ayam 18–22 kg) |
-| **UC-06** | Lihat rekomendasi pembelian | T-5.2, T-5.4, T-8.5, T-10.1 | Saran beli bersih = kebutuhan - stok layak pakai (contoh uji: 13–17 kg) |
-| **UC-07** | Waste Risk Score | T-5.2, T-5.4, T-8.5, T-10.1 | Forward simulation 60 hari menampilkan status risiko rendah/sedang/tinggi |
-| **UC-08** | Hitung forecast | T-1.5, T-3.5, T-5.1, T-5.3, T-10.1 | Model time-series mempelajari alpha optimal, pola hari, dan event multiplier |
-| **UC-09** | Pantau dashboard inventory | T-6.1, T-8.5 | Dashboard menampilkan tren penjualan dan porsi produk yang dapat dibuat |
-| **UC-10** | Lihat riwayat transaksi | T-4.1, T-4.3, T-5.5, T-8.4 | Transaksi historis bersih tampil di UI dan menjadi data latih evaluasi |
-| **UC-11** | Berlangganan paket Pro | T-7.1, T-8.6 | Tombol checkout simulasi mengubah role pengguna menjadi Pro secara instan |
-| **UC-12** | Kelola akun dan feedback | T-2.9, T-7.3, T-8.2, T-8.6 | Perbarui profil, hapus akun mandiri, dan form pengiriman pesan feedback |
-| **UC-13** | Sinkronisasi data via API | T-7.2, T-8.6 | Generator mock orders memasukkan transaksi POS & ojol untuk akun Pro |
+| **UC-01** | Register dan Sign In | T-2.5, T-2.6, T-2.7, T-2.8, T-8.2, T-9.4, T-9.9, T-9.10, T-10.2, T-10.5 | Akun baru terdaftar, login menghasilkan cookie HttpOnly terverifikasi via DevTools, pesan error validasi & 429 inline rapi di form, refresh token sukses, dan lolos checklist demo |
+| **UC-02** | Atur profil usaha dan bahan | T-1.5, T-3.1, T-3.2, T-8.3, T-9.5, T-9.9, T-10.3, T-10.5 | Master bahan (segar/tahan lama) dan resep menu tersimpan per user_id, modal input/edit rapi di 3 ukuran layar tanpa overflow, data seed terisi, dan lolos checklist demo |
+| **UC-03** | Input penjualan dan stok | T-1.5, T-3.3, T-3.4, T-4.1, T-8.4, T-9.6, T-9.9, T-10.1, T-10.3, T-10.5 | Penjualan memotong batch aktif via FEFO, stok masuk dan limbah tercatat, form stepper penjualan responsif di layar sentuh, dan lolos checklist demo |
+| **UC-04** | Import data Excel | T-4.2, T-4.3, T-8.4, T-9.6, T-10.4, T-10.5 | Download template Excel dan upload file berhasil divalidasi in-memory via openpyxl, area dropzone & kartu hasil impor baris sukses/gagal tersaji jelas, dan lolos checklist demo |
+| **UC-05** | Lihat forecast kebutuhan | T-5.1, T-5.3, T-8.5, T-9.7, T-10.1, T-10.2, T-10.3, T-10.5 | Tampil rentang proyeksi kebutuhan bahan (mis. ayam 18–22 kg) dengan format angka lokal ID, proteksi kuota horizon Freemium vs Pro, empty state jika riwayat belum cukup, dan lolos checklist demo |
+| **UC-06** | Lihat rekomendasi pembelian | T-5.2, T-5.4, T-8.5, T-9.7, T-10.1, T-10.3, T-10.5 | Saran beli bersih = kebutuhan - stok layak pakai (terverifikasi untuk kasus acuan ayam 13–17 kg), kartu belanja responsif dan interaktif di UI, dan lolos checklist demo |
+| **UC-07** | Waste Risk Score | T-5.2, T-5.4, T-8.5, T-9.7, T-10.1, T-10.3, T-10.5 | Forward simulation 60 hari menampilkan status risiko rendah/sedang/tinggi, badge teks eksplisit non-color-only, saran tindakan Cabai Merah teruji di browser, dan lolos checklist demo |
+| **UC-08** | Hitung forecast | T-1.5, T-3.5, T-5.1, T-5.3, T-9.5, T-9.7, T-10.1, T-10.3, T-10.5 | Model time-series mempelajari alpha optimal, pola hari, dan event multiplier; form event tagging dengan slider dampak dan evaluasi akurasi WAPE tampil rapi di UI; lolos checklist demo |
+| **UC-09** | Pantau dashboard inventory | T-6.1, T-8.5, T-9.7, T-9.9, T-10.3, T-10.5 | Dashboard menyajikan 4 kartu KPI, grafik tren penjualan SVG adaptif tanpa library eksternal, dan kartu porsi produk yang dapat dibuat tanpa overflow di desktop & mobile, dan lolos checklist demo |
+| **UC-10** | Lihat riwayat transaksi | T-4.1, T-4.3, T-5.5, T-8.4, T-9.6, T-9.7, T-10.3, T-10.5 | Transaksi historis bersih tampil dengan pagination dan filter sumber di UI, terhubung sebagai data latih evaluasi akurasi model (WAPE ~2,5%), dan lolos checklist demo |
+| **UC-11** | Berlangganan paket Pro | T-7.1, T-8.6, T-9.8, T-10.5 | Kartu paket Freemium & Pro sejajar rapi, tombol checkout simulasi mengubah role pengguna menjadi Pro secara instan dan mengaktifkan badge PRO konsisten, dan lolos checklist demo |
+| **UC-12** | Kelola akun dan feedback | T-2.9, T-7.3, T-8.2, T-8.6, T-9.8, T-9.9, T-10.5 | Perbarui profil, form feedback 5 bintang tersimpan ke database, hapus akun mandiri terverifikasi dengan konfirmasi kata sandi dan pengetikan "HAPUS", dan lolos checklist demo |
+| **UC-13** | Sinkronisasi data via API | T-7.2, T-8.6, T-9.8, T-10.5 | Generator mock orders memasukkan transaksi POS & ojol untuk akun Pro, kartu integrasi rapi dengan status badge dot terhubung dan tombol sinkronisasi aktif, dan lolos checklist demo |
 
 ---
 
@@ -1095,7 +1095,15 @@ Berikut adalah daftar temuan teknis serta parameter bisnis yang belum ditetapkan
       - `src/frontend/js/pages/penjualan.js`, `import.js`, `riwayat.js`: Input manual mengirim payload `{ date, items: [{ product_id, qty }], source: 'manual' }`. Halaman import mengunduh blob Excel dari `GET /api/v1/sales/template` dan mengunggah FormData ke `POST /api/v1/sales/import-excel` dengan feedback baris sukses atau validasi error yang presisi. Halaman riwayat mendukung filter tanggal & sumber transaksi serta penghapusan baris via `DELETE /api/v1/sales/{id}`.
       - `src/frontend/js/pages/forecast.js`, `rekomendasi.js`, `evaluasi.js`, `dashboard.js`: Menampilkan rentang `need_lo`–`need_hi` dan level Waste Risk Score langsung dari backend tanpa menghitung ulang. Penanganan exception riwayat kurang di-render sebagai kartu komponen `emptyState`. Parsing `trained_at` di `evaluasi.js` dibuat tangguh terhadap format ISO timezone offset. Dashboard menampilkan grafik SVG tren penjualan dari riwayat transaksi dan kartu kapasitas porsi dari respons `/dashboard`.
       - `src/frontend/js/pages/langganan.js`, `akun.js`: Paket Freemium dan Pro disajikan jelas dengan penanda eksplisit `payment_simulation: true`. Integrasi mock dibatasi hanya untuk Pro (Freemium memunculkan pesan 403 ramah), dan sinkronisasi mock MokaPOS berhasil mencatat transaksi baru ke riwayat. Formulir feedback di `akun.js` mengirimkan `{ rating, category, message }` ke `POST /api/v1/feedback` dengan validasi bintang 1–5.
-20. **Finalisasi Hasil Numerik Seeding Data Makalah & Protokol HTTP Server Frontend (Fase 10):**
+20. **Standardisasi UI Frontend, Aksesibilitas Visual, & Arsitektur Responsif (Fase 9 - T-9.1 sampai T-9.10):**
+    * *Kondisi:* Audit visual awal (`docs/UI_AUDIT.md`) menemukan inkonsistensi layout pada berbagai ukuran viewport, kontras warna indikator risiko yang mengandalkan warna semata (melanggar prinsip WCAG *non-color-only*), overflow pada tabel data saat dibuka di ponsel (390px), serta perlunya alur konfirmasi pengamanan destruktif pada penghapusan akun mandiri.
+    * *Asumsi & Keputusan Implementasi:*
+      - **Desain Responsif & Titik Putus (Breakpoint):** Titik putus layout ditetapkan pada 900px (`max-width: 900px`) di mana sidebar navigasi desktop secara adaptif berubah menjadi *slide-over drawer* dengan tombol menu toggle dan *bottom navigation bar* khusus mobile. Seluruh elemen interaktif disetel memenuhi standar ergonomi sentuh minimal 44 × 44 px dengan ukuran font isi minimal 14 px.
+      - **Aksesibilitas Indikator Risiko (WCAG 2.1):** Badge *Waste Risk Score* pada rekomendasi belanja dan dashboard tidak hanya mengandalkan kode warna (hijau/kuning/merah), melainkan menyertakan teks status risiko eksplisit (*Aman*, *Risiko sedang*, *Risiko tinggi*) dan penjelasan potensi limbah beserta saran tindakan konkret.
+      - **Grafik Tren Penjualan Native SVG:** Visualisasi tren penjualan pada dashboard diimplementasikan menggunakan elemen `<svg>` inline dengan `viewBox` responsif dan `preserveAspectRatio="none"` tanpa mengimpor pustaka grafik pihak ketiga yang berat (seperti Chart.js atau D3), memastikan performa instan dan fungsionalitas offline PWA.
+      - **Validasi Formulir & Penanganan Error Inline:** Pesan kesalahan otentikasi (seperti email duplikat atau status 429 *rate limit*) disajikan sebagai banner pesan inline di dekat form formulir selain toast pop-up, sehingga konteks input tidak terputus.
+      - **Pengamanan Aksi Destruktif Hapus Akun:** Form penghapusan akun mandiri (`#/hapus-akun`) mewajibkan otentikasi ganda berupa konfirmasi kata sandi aktif dan pengetikan teks literal `"HAPUS"` sebelum tombol eksekusi aktif, mencegah penghapusan data usaha yang tidak disengaja.
+21. **Finalisasi Hasil Numerik Seeding Data Makalah & Protokol HTTP Server Frontend (Fase 10):**
     * *Kondisi:* Kasus acuan makalah mengilustrasikan kebutuhan daging ayam 18–22 kg dengan stok layak pakai 5 kg menghasilkan rekomendasi beli 13–17 kg. Selain itu, modul frontend native ES module (`src/frontend/js/*.js`) memicu puluhan concurrent HTTP request saat dibuka di browser modern.
     * *Asumsi & Keputusan Implementasi:*
       - Pada `src/backend/app/seed.py`, volume rata-rata penjualan harian disetel ke 99 porsi untuk Nasi Ayam Bakar (0,2 kg ayam/porsi) dengan deviasi acak tetap (seed=42) dan batch ayam tersisa 5,0 kg. Hasil nyata endpoint peramalan menghasilkan kebutuhan besok 19,81 kg (rentang 18,45–21,16 kg) dan rekomendasi beli 15,0 kg (rentang 13,5–16,5 kg) dengan estimasi biaya Rp570.000, persis memenuhi target ilustrasi makalah tanpa memanipulasi algoritma perhitungan.
