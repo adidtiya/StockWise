@@ -37,6 +37,167 @@ def test_paper_chicken_case_and_fefo():
     assert buy == 15.0
     assert buy_lo == 13.0
     assert buy_hi == 17.0
+    assert buy_lo <= buy <= buy_hi
+
+    # Simulasi FEFO dengan stok layak pakai 5 kg dan rencana beli 15 kg
+    d0 = date(2026, 6, 1)
+    needs = {d0 + timedelta(days=1): 20.0}
+    for i in range(2, 61):
+        needs[d0 + timedelta(days=i)] = 0.0
+
+    # Stok awal: 5 kg ayam kedaluwarsa hari T+2 (masih layak pakai di hari T+1)
+    existing_batches = [{
+        "id": 1,
+        "qty": stock,
+        "expiry_date": d0 + timedelta(days=2),
+        "unit_price": 35000.0,
+    }]
+    sim = simulate_fefo_60_days(
+        existing_batches,
+        needs,
+        start_date=d0,
+        planned_buy=buy,
+        planned_expiry_date=d0 + timedelta(days=3),
+        unit_price=35000.0,
+    )
+    # Total kebutuhan hari T+1 adalah 20 kg. Konsumsi: 5 kg dari stok lama + 15 kg dari rencana beli = 20 kg
+    assert sim["waste_qty"] == 0.0
+    # Sesuai UC-07: Waste risk hanya ditampilkan jika stok berpotensi berlebih (waste > 0). Jika waste = 0, risk_level None.
+    assert sim["risk_level"] is None
+    assert sim["safe_buy"] == 15.0
+
+
+def test_edge_case_empty_stock():
+    """Kasus batas: stok kosong."""
+    # 1. take_fefo dengan list batch kosong
+    assert take_fefo([], 10.0) == 0.0
+
+    # 2. simulate_fefo_60_days dengan batch kosong
+    d0 = date(2026, 6, 1)
+    needs = {d0 + timedelta(days=1): 10.0}
+    sim = simulate_fefo_60_days(
+        [],
+        needs,
+        start_date=d0,
+        planned_buy=10.0,
+        planned_expiry_date=d0 + timedelta(days=3),
+        unit_price=20000.0,
+    )
+    assert sim["waste_qty"] == 0.0
+    assert sim["safe_buy"] == 10.0
+
+    # 3. replay_inventory dengan batch kosong
+    ingredients = [{"id": 1, "name": "Beras", "price": 12000.0}]
+    inv = replay_inventory(ingredients, {}, batches=[], sales=[])
+    assert inv.stock(1) == 0.0
+
+
+def test_edge_case_zero_demand():
+    """Kasus batas: kebutuhan 0."""
+    d0 = date(2026, 6, 1)
+    batches = [
+        {"id": 1, "qty": 10.0, "expiry_date": d0 + timedelta(days=2), "unit_price": 1000.0}
+    ]
+    # take_fefo dengan kebutuhan 0
+    taken = take_fefo(batches, 0.0)
+    assert taken == 0.0
+    assert batches[0]["qty"] == 10.0
+
+    # simulate_fefo_60_days dengan kebutuhan 0 seluruh hari -> batch kedaluwarsa menjadi limbah
+    needs_zero = {d0 + timedelta(days=i): 0.0 for i in range(1, 61)}
+    sim = simulate_fefo_60_days(
+        batches,
+        needs_zero,
+        start_date=d0,
+        planned_buy=0.0,
+    )
+    # Batch kedaluwarsa di hari T+2, pada hari T+3 sudah lewat kedaluwarsa
+    assert sim["waste_qty"] == 10.0
+    assert len(sim["waste"]) == 1
+
+
+def test_edge_case_duplicate_expiry_dates():
+    """Kasus batas: tanggal kedaluwarsa ganda (multiple batches pada hari yang sama)."""
+    d0 = date(2026, 6, 1)
+    same_expiry = d0 + timedelta(days=3)
+    batches = [
+        {"id": 1, "qty": 5.0, "expiry_date": same_expiry, "unit_price": 5000.0},
+        {"id": 2, "qty": 10.0, "expiry_date": same_expiry, "unit_price": 5000.0},
+        {"id": 3, "qty": 8.0, "expiry_date": d0 + timedelta(days=7), "unit_price": 5000.0},
+    ]
+
+    # take_fefo mengambil 8.0: 5.0 dari batch 1, 3.0 dari batch 2
+    taken = take_fefo(batches, 8.0)
+    assert pytest.approx(taken, 0.001) == 8.0
+    assert pytest.approx(batches[0]["qty"], 0.001) == 0.0
+    assert pytest.approx(batches[1]["qty"], 0.001) == 7.0
+    assert pytest.approx(batches[2]["qty"], 0.001) == 8.0
+
+    # Test simulasi dengan tanggal kedaluwarsa ganda
+    needs = {d0 + timedelta(days=1): 2.0}
+    for i in range(2, 61):
+        needs[d0 + timedelta(days=i)] = 0.0
+    # Batch 1 (0 kg sisa) dan Batch 2 (7 kg sisa) sama-sama expired setelah day 3
+    sim = simulate_fefo_60_days(
+        [
+            {"id": 1, "qty": 5.0, "expiry_date": same_expiry, "unit_price": 5000.0},
+            {"id": 2, "qty": 10.0, "expiry_date": same_expiry, "unit_price": 5000.0},
+        ],
+        needs,
+        start_date=d0,
+    )
+    # Total awal 15.0, dipakai 2.0 -> sisa 13.0 terbuang
+    assert pytest.approx(sim["waste_qty"], 0.001) == 13.0
+
+
+def test_waste_detection_and_thresholds():
+    """Uji deteksi waste bertahap dan batas persis Waste Risk Score pada 10% dan 30%."""
+    d0 = date(2026, 6, 1)
+    needs_zero = {d0 + timedelta(days=i): 0.0 for i in range(1, 61)}
+
+    # Tepat di bawah 10% -> rendah (misal 9.9%)
+    r_sub10 = simulate_fefo_60_days(
+        [{"qty": 90.1, "expiry_date": d0 + timedelta(days=90), "unit_price": 1000.0}],
+        needs_zero,
+        start_date=d0,
+        planned_buy=9.9,
+        planned_expiry_date=d0 + timedelta(days=1),
+        unit_price=1000.0,
+    )
+    assert r_sub10["risk_level"] == "rendah"
+
+    # Tepat 10.0% -> sedang
+    r_10 = simulate_fefo_60_days(
+        [{"qty": 90.0, "expiry_date": d0 + timedelta(days=90), "unit_price": 1000.0}],
+        needs_zero,
+        start_date=d0,
+        planned_buy=10.0,
+        planned_expiry_date=d0 + timedelta(days=1),
+        unit_price=1000.0,
+    )
+    assert r_10["risk_level"] == "sedang"
+
+    # Tepat 30.0% -> sedang
+    r_30 = simulate_fefo_60_days(
+        [{"qty": 70.0, "expiry_date": d0 + timedelta(days=90), "unit_price": 1000.0}],
+        needs_zero,
+        start_date=d0,
+        planned_buy=30.0,
+        planned_expiry_date=d0 + timedelta(days=1),
+        unit_price=1000.0,
+    )
+    assert r_30["risk_level"] == "sedang"
+
+    # Tepat di atas 30% -> tinggi (misal 30.1%)
+    r_sup30 = simulate_fefo_60_days(
+        [{"qty": 69.9, "expiry_date": d0 + timedelta(days=90), "unit_price": 1000.0}],
+        needs_zero,
+        start_date=d0,
+        planned_buy=30.1,
+        planned_expiry_date=d0 + timedelta(days=1),
+        unit_price=1000.0,
+    )
+    assert r_sup30["risk_level"] == "tinggi"
 
 
 def test_fefo_simulation_boundaries_and_float_drift():

@@ -933,7 +933,7 @@ Tujuan: Memperbaiki tampilan antarmuka `src/frontend/` yang rusak setelah Fase 8
 ### Fase 10: Pengujian, Data Seeding, & Finalisasi Demo
 Tujuan: Mengotomasi rangkaian tes unit dan API, menyediakan skrip data seed realistis untuk pengujian live demo, membersihkan artefak Node.js lama, dan memvalidasi seluruh 13 Use Case.
 
-- [ ] **T-10.1 Otomasi tes unit algoritma (`test_forecast_math.py`, `test_fefo.py`)**
+- [x] **T-10.1 Otomasi tes unit algoritma (`test_forecast_math.py`, `test_fefo.py`)**
   * **Ukuran:** S
   * **Rujukan:** TRD 4.2; PRD UC-06, UC-07, UC-08
   * **Dependensi:** T-5.1, T-5.2
@@ -946,7 +946,7 @@ Tujuan: Mengotomasi rangkaian tes unit dan API, menyediakan skrip data seed real
   * **Kriteria Selesai:**
     * Perintah `docker compose -f deploy/compose/docker-compose.dev.yml run --rm api pytest tests/unit/lib` lolos 100% (semua assertions passed).
 
-- [ ] **T-10.2 Otomasi tes integrasi API (`test_auth_api.py`, `test_forecast_api.py`)**
+- [x] **T-10.2 Otomasi tes integrasi API (`test_auth_api.py`, `test_forecast_api.py`)**
   * **Ukuran:** M
   * **Rujukan:** TRD 4.2, TRD 6.2.1, TRD 6.2.9; PRD UC-01, UC-05
   * **Dependensi:** T-2.8, T-5.3
@@ -958,7 +958,7 @@ Tujuan: Mengotomasi rangkaian tes unit dan API, menyediakan skrip data seed real
   * **Kriteria Selesai:**
     * Perintah `docker compose -f deploy/compose/docker-compose.dev.yml run --rm api pytest tests/api` berjalan sukses tanpa error.
 
-- [ ] **T-10.3 Skrip seeding data awal realistis untuk demo (`seed.py`)**
+- [x] **T-10.3 Skrip seeding data awal realistis untuk demo (`seed.py`)**
   * **Ukuran:** M
   * **Rujukan:** TRD 5, TRD 8.5; kode lama `server/seed.js`
   * **Dependensi:** T-1.6, T-4.1
@@ -974,7 +974,7 @@ Tujuan: Mengotomasi rangkaian tes unit dan API, menyediakan skrip data seed real
   * **Kriteria Selesai:**
     * Perintah `docker compose -f deploy/compose/docker-compose.dev.yml run --rm api python -m app.seed` sukses menyuntikkan seluruh data contoh tanpa pelanggaran integrity constraint.
 
-- [ ] **T-10.4 Pembersihan kode Node.js lama & pembaruan panduan operasional (`README.md`)**
+- [x] **T-10.4 Pembersihan kode Node.js lama & pembaruan panduan operasional (`README.md`)**
   * **Ukuran:** S
   * **Rujukan:** TRD 1.2, TRD 8.5
   * **Dependensi:** T-10.2, T-10.3, T-8.5
@@ -991,7 +991,7 @@ Tujuan: Mengotomasi rangkaian tes unit dan API, menyediakan skrip data seed real
     * Direktori `server/` dan `package.json` sudah tidak ada di repositori.
     * Menjalankan instruksi di `README.md` dari awal pada repositori bersih berhasil menampilkan aplikasi web yang berjalan normal.
 
-- [ ] **T-10.5 Verifikasi end-to-end checklist demo 13 Use Case**
+- [x] **T-10.5 Verifikasi end-to-end checklist demo 13 Use Case**
   * **Ukuran:** S
   * **Rujukan:** PRD 5.1 (UC-01 s/d UC-13); TRD 6.2
   * **Dependensi:** T-10.4, T-9.10
@@ -1095,3 +1095,8 @@ Berikut adalah daftar temuan teknis serta parameter bisnis yang belum ditetapkan
       - `src/frontend/js/pages/penjualan.js`, `import.js`, `riwayat.js`: Input manual mengirim payload `{ date, items: [{ product_id, qty }], source: 'manual' }`. Halaman import mengunduh blob Excel dari `GET /api/v1/sales/template` dan mengunggah FormData ke `POST /api/v1/sales/import-excel` dengan feedback baris sukses atau validasi error yang presisi. Halaman riwayat mendukung filter tanggal & sumber transaksi serta penghapusan baris via `DELETE /api/v1/sales/{id}`.
       - `src/frontend/js/pages/forecast.js`, `rekomendasi.js`, `evaluasi.js`, `dashboard.js`: Menampilkan rentang `need_lo`–`need_hi` dan level Waste Risk Score langsung dari backend tanpa menghitung ulang. Penanganan exception riwayat kurang di-render sebagai kartu komponen `emptyState`. Parsing `trained_at` di `evaluasi.js` dibuat tangguh terhadap format ISO timezone offset. Dashboard menampilkan grafik SVG tren penjualan dari riwayat transaksi dan kartu kapasitas porsi dari respons `/dashboard`.
       - `src/frontend/js/pages/langganan.js`, `akun.js`: Paket Freemium dan Pro disajikan jelas dengan penanda eksplisit `payment_simulation: true`. Integrasi mock dibatasi hanya untuk Pro (Freemium memunculkan pesan 403 ramah), dan sinkronisasi mock MokaPOS berhasil mencatat transaksi baru ke riwayat. Formulir feedback di `akun.js` mengirimkan `{ rating, category, message }` ke `POST /api/v1/feedback` dengan validasi bintang 1–5.
+20. **Finalisasi Hasil Numerik Seeding Data Makalah & Protokol HTTP Server Frontend (Fase 10):**
+    * *Kondisi:* Kasus acuan makalah mengilustrasikan kebutuhan daging ayam 18–22 kg dengan stok layak pakai 5 kg menghasilkan rekomendasi beli 13–17 kg. Selain itu, modul frontend native ES module (`src/frontend/js/*.js`) memicu puluhan concurrent HTTP request saat dibuka di browser modern.
+    * *Asumsi & Keputusan Implementasi:*
+      - Pada `src/backend/app/seed.py`, volume rata-rata penjualan harian disetel ke 99 porsi untuk Nasi Ayam Bakar (0,2 kg ayam/porsi) dengan deviasi acak tetap (seed=42) dan batch ayam tersisa 5,0 kg. Hasil nyata endpoint peramalan menghasilkan kebutuhan besok 19,81 kg (rentang 18,45–21,16 kg) dan rekomendasi beli 15,0 kg (rentang 13,5–16,5 kg) dengan estimasi biaya Rp570.000, persis memenuhi target ilustrasi makalah tanpa memanipulasi algoritma perhitungan.
+      - Default `python3 -m http.server` menggunakan protokol HTTP/1.0 yang menutup socket TCP tiap request sehingga memicu error `ERR_SOCKET_NOT_CONNECTED` pada pemuatan concurrent modul ES. Dokumentasi README dan verifikasi disempurnakan dengan menyertakan opsi `-p HTTP/1.1` (`python3 -m http.server 5173 --directory src/frontend -p HTTP/1.1`) guna mendukung persistent connections.

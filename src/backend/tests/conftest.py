@@ -1,5 +1,8 @@
 import pytest
+from httpx import ASGITransport, AsyncClient
+
 from app.connections.postgres import engine
+from app.main import app
 from app.middleware.rate_limit import rate_limiter
 
 
@@ -9,3 +12,12 @@ async def cleanup_db_connections():
     rate_limiter.reset()
     yield
     await engine.dispose()
+
+
+@pytest.fixture
+async def async_client():
+    """Client pengujian httpx.AsyncClient terhubung ke aplikasi FastAPI."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test/api/v1") as client:
+        yield client
+
