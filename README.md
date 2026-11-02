@@ -1,88 +1,190 @@
-# StockWise — Prototype MVP
+# StockWise — Sistem Prediksi Kebutuhan Stok & Pencegahan Limbah UMKM F&B
 
 > *Know what and how much to stock before it becomes waste.*
 
-Aplikasi web (mobile-first, bisa di-install sebagai PWA) untuk UMKM F&B: memprediksi kebutuhan bahan baku,
-memberi rekomendasi belanja, dan menampilkan **Waste Risk Score** sebelum bahan terbuang.
+StockWise adalah aplikasi web (*mobile-first* / Progressive Web App) yang dirancang khusus untuk membantu pemilik usaha kuliner UMKM (katering, warung makan, dan rumah makan) mengelola inventaris bahan baku. Sistem menggunakan model *time-series exponential smoothing* terbobot pola hari dan hari khusus (event) untuk memprediksi kebutuhan bahan, memberikan rekomendasi belanja cerdas, serta menghitung **Waste Risk Score** melalui simulasi maju FEFO (*First-Expired, First-Out*) 60 hari guna mencegah bahan baku kedaluwarsa dan terbuang sia-sia.
 
-## Menjalankan di komputer sendiri
+---
 
-Prasyarat: **Node.js 22.13 atau lebih baru** (database memakai modul bawaan `node:sqlite`, jadi tidak perlu install database terpisah).
+## Tautan Akses Layanan & Web UI (Quick Access)
 
-```bash
-npm install
-```
+Setelah seluruh layanan dijalankan, Anda dapat langsung mengakses antarmuka aplikasi, dokumentasi API, dan basis data melalui tautan berikut:
 
-```bash
-npm start
-```
-
-Buka http://localhost:3000. Database `data/stockwise.db` dibuat otomatis saat server pertama kali jalan.
-
-### Akun demo (dibuat otomatis, berisi riwayat 90 hari)
-
-| Tipe user | Email | Kata sandi | Usaha |
-|---|---|---|---|
-| Pemilik UMKM (Freemium) | `demo@stockwise.id` | `demo12345` | Warung Makan Bu Sari |
-| Pemilik UMKM Pro | `pro@stockwise.id` | `demo12345` | Dapur Katering Berkah |
-
-Akun demo juga bisa dipilih langsung dengan satu klik di halaman **Masuk**. Datanya otomatis dibuat ulang bila sudah basi
-(tidak ada penjualan kemarin) atau bila akun demo dihapus.
-
-
-### Yang masih berupa simulasi (sebutkan di makalah)
-
-- **Pembayaran Pro**: tidak terhubung payment gateway; checkout langsung berstatus lunas.
-- **Sinkronisasi API pihak ketiga**: integrasi resmi butuh kemitraan dengan MokaPOS/GoBiz/GrabMerchant/Shopee Partner.
-  Tombol sinkron membangkitkan pesanan contoh dari pola forecast hari ini.
-
-## Cara kerja forecast (UC-08)
-
-Per menu: **level** penjualan (exponential smoothing, α dipilih otomatis dari 0,05–0,5 dengan error terkecil)
-× **faktor hari** dalam seminggu (8 minggu terakhir, hari event dikecualikan) × **faktor event** (dipelajari dari
-penjualan aktual pada hari berlabel yang sama; sebelum ada riwayat dipakai dampak default). Prediksi menu dikalikan
-komposisi resep menjadi kebutuhan bahan. Rentang ketidakpastian berasal dari error prediksi 28 hari terakhir.
-
-**Waste Risk Score**: stok disimpan per batch dengan tanggal kedaluwarsa. Sistem mensimulasikan pemakaian harian
-(FEFO, bahan yang paling cepat kedaluwarsa dipakai dulu) sampai 60 hari ke depan; bahan yang belum terpakai saat
-kedaluwarsa dihitung sebagai potensi waste. Rasio waste terhadap stok + rencana beli: < 10% rendah, 10–30% sedang, > 30% tinggi.
-Model dilatih ulang otomatis setiap 24 jam atau lewat tombol di halaman Evaluasi.
-
-## Tech stack 
-
-| Komponen | Teknologi | Alasan singkat |
+| Antarmuka / Layanan | Tautan Akses | Keterangan |
 |---|---|---|
-| Back-end | Node.js 22+ dengan Express 5 | Satu bahasa (JavaScript) untuk front-end dan back-end sehingga tim kecil cepat bergerak; Express ringan dan mudah di-deploy di layanan gratis/murah. |
-| Front-end | HTML, CSS, JavaScript (ES Modules), SPA tanpa framework, grafik SVG buatan sendiri, PWA manifest | Tanpa proses build, ukuran kecil, cepat di ponsel kelas menengah yang dipakai pemilik UMKM; tampilan mobile-first dengan navigasi bawah. |
-| Database | SQLite (`node:sqlite` bawaan Node) | Tanpa server database terpisah, cukup satu file; relasi & `ON DELETE CASCADE` untuk hapus akun. Saat pengguna bertambah dapat dimigrasi ke PostgreSQL karena skemanya relasional standar. |
-| 3rd party services | SheetJS (baca/tulis Excel di browser), Google Fonts (Plus Jakarta Sans); rencana produksi: Midtrans/Xendit (pembayaran), API MokaPOS, GoBiz, GrabMerchant, Shopee Partner | Import Excel tanpa membebani server; integrasi kanal penjualan sebagai pembeda paket Pro. |
-| Other tools | Git & GitHub, VS Code, Render (hosting), Figma (desain), Claude Code (bantuan pengembangan) | |
+| 🌐 **Frontend Web App (PWA)** | [http://localhost:5173](http://localhost:5173) | Aplikasi web utama UMKM StockWise |
+| 📖 **Swagger UI (OpenAPI)** | [http://localhost:8000/docs](http://localhost:8000/docs) | Dokumentasi interaktif & uji coba endpoint REST API |
+| 📑 **ReDoc API** | [http://localhost:8000/redoc](http://localhost:8000/redoc) | Dokumentasi spesifikasi API alternatif |
+| 🩺 **Health Check Endpoint** | [http://localhost:8000/api/v1/health](http://localhost:8000/api/v1/health) | Pemeriksaan kesiapan server backend & basis data |
+| 🗄️ **Database Web UI (Adminer)** | [http://localhost:8080](http://localhost:8080) | Antarmuka browser visual PostgreSQL (lihat tabel, batch & transaksi) |
+| 🔌 **Koneksi Database Langsung (GUI)** | `localhost:5432` | Akses langsung client desktop (DBeaver, TablePlus, pgAdmin) |
 
-Keamanan: kata sandi di-hash dengan **scrypt** + salt, sesi memakai cookie `httpOnly` bertanda tangan HMAC,
-semua query memakai prepared statement, dan setiap data dicek kepemilikannya per pengguna.
+> [!TIP]
+> **Kredensial Akses Cepat:**
+> - **Akun Demo Web App:** Email: `demo@stockwise.id` \| Sandi: `Demo1234!`
+> - **Database Web UI (Adminer):** Sistem: `PostgreSQL` \| Server: `db` \| Pengguna: `stockwise_user` \| Sandi: `stockwise_password` \| Basis data: `stockwise_db`
+> - **Koneksi Client Desktop (DBeaver/TablePlus):** Host: `localhost` \| Port: `5432` \| User: `stockwise_user` \| Sandi: `stockwise_password` \| Database: `stockwise_db`
 
+---
 
+## 1. Prasyarat Sistem
 
-Catatan paket gratis Render: server tidur setelah ±15 menit tanpa pengunjung (akses pertama butuh ±30–60 detik) dan
-disk tidak permanen, sehingga akun baru yang didaftarkan bisa hilang saat server restart. **Akun demo selalu dibuat
-ulang otomatis**, jadi aman untuk presentasi. Untuk data permanen gunakan paket berbayar dengan persistent disk
-(set `DATA_DIR` ke lokasi disk) atau Railway dengan volume.
+Sebelum menjalankan aplikasi, pastikan perangkat Anda telah terpasang:
+- **Docker** (versi 24.0 atau lebih baru) dan **Docker Compose** (v2).
+- **Python 3.11+** (opsional pada host, digunakan untuk menjalankan server statis frontend dan pengujian lokal).
+- **Peramban Web Modern** (Google Chrome, Mozilla Firefox, Safari, atau Microsoft Edge).
 
-## Struktur folder
+### Panduan Singkat Instalasi Docker Desktop
+Situs resmi Docker: [Docker Desktop Overview](https://www.docker.com/products/docker-desktop/)
 
+- **macOS:**
+  1. Unduh installer melalui [Docker Desktop for Mac](https://docs.docker.com/desktop/setup/install/mac-install/) (pilih versi *Apple Silicon* atau *Intel Chip* sesuai perangkat).
+  2. Buka berkas `.dmg` hasil unduhan, lalu seret ikon Docker ke folder **Applications**.
+  3. Buka Docker Desktop dari Launchpad/Applications dan ikuti instruksi hingga status Docker menunjukkan *Engine running*.
+  *(Opsi alternatif via Homebrew)*: jalankan `brew install --cask docker`.
+
+- **Windows:**
+  1. Pastikan fitur WSL 2 telah aktif (buka PowerShell sebagai Administrator dan jalankan `wsl --install`).
+  2. Unduh installer melalui [Docker Desktop for Windows](https://docs.docker.com/desktop/setup/install/windows-install/).
+  3. Jalankan berkas `Docker Desktop Installer.exe`, pastikan opsi **Use WSL 2 instead of Hyper-V** tercentang, lalu ikuti proses hingga selesai.
+  4. Lakukan *restart* komputer jika diminta, kemudian buka aplikasi Docker Desktop dan pastikan engine dalam status *running*.
+
+---
+
+## 2. Daftar Port yang Digunakan
+
+| Port | Layanan | Keterangan |
+|---|---|---|
+| **5173** | Frontend Web App (PWA) | Server HTTP statis Vanilla JS (`http://localhost:5173`) |
+| **8000** | Backend API (FastAPI) | Layanan REST API & Swagger UI (`http://localhost:8000/docs`) |
+| **8080** | Database Web UI (Adminer) | Antarmuka browser visual PostgreSQL (`http://localhost:8080`) |
+| **5432** | Database PostgreSQL 16 | Basis data relasional penyimpanan transaksi dan inventaris |
+
+---
+
+## 3. Panduan Langkah demi Langkah Menjalankan Aplikasi
+
+Ikuti langkah-langkah di bawah ini untuk mengklon, menyiapkan, dan menyalakan aplikasi dari awal:
+
+### Langkah 1: Siapkan File Environment Backend
+Salin berkas templat environment `env.example` ke file konfigurasi development:
+```bash
+cp src/backend/app/config/env/env.example src/backend/app/config/env/development.env
 ```
-server/
-  server.js        Express app, routing, static files
-  db.js            Skema SQLite
-  auth.js          Hash kata sandi, sesi cookie, middleware
-  forecast.js      UC-08 model forecast & latih ulang
-  inventory.js     Stok per batch (FEFO), kedaluwarsa, waste
-  analytics.js     Dashboard, rekomendasi + Waste Risk Score, evaluasi
-  seed.js          Event default & data contoh 90 hari, akun demo
-  routes/          auth.js, data.js (bahan, menu, stok, penjualan, import, event, riwayat), account.js (forecast, langganan, API, feedback)
-public/
-  index.html, css/style.css, img/logo.png, manifest.webmanifest
-  js/app.js        Router & layout (sidebar desktop, bottom nav ponsel)
-  js/ui.js         Komponen UI, format, grafik SVG
-  js/pages/        Satu file per halaman
+
+### Langkah 2: Bangun Image Kontainer Backend
+Bangun image Docker backend berbasis Python 3.11:
+```bash
+docker compose -f deploy/compose/docker-compose.dev.yml build
 ```
+
+### Langkah 3: Jalankan Layanan Basis Data PostgreSQL
+Nyalakan kontainer PostgreSQL 16 dan tunggu hingga berstatus sehat (*healthy*):
+```bash
+docker compose -f deploy/compose/docker-compose.dev.yml up -d db
+```
+
+### Langkah 4: Jalankan Migrasi Basis Data (Alembic)
+Terapkan seluruh skema tabel ke database PostgreSQL menggunakan Alembic:
+```bash
+docker compose -f deploy/compose/docker-compose.dev.yml run --rm api alembic upgrade head
+```
+
+### Langkah 5: Suntikkan Data Awal Realistis (Seed Data)
+Isi basis data dengan akun demo UMKM Katering, master data 5 bahan baku, 2 menu produk, batch persediaan, event, dan riwayat penjualan 90 hari terakhir:
+```bash
+docker compose -f deploy/compose/docker-compose.dev.yml run --rm api python -m app.seed
+```
+
+### Langkah 6: Jalankan Layanan Backend API
+Nyalakan kontainer backend FastAPI:
+```bash
+docker compose -f deploy/compose/docker-compose.dev.yml up -d api
+```
+Pastikan kontainer berjalan normal dan sehat:
+```bash
+docker compose -f deploy/compose/docker-compose.dev.yml ps
+```
+Pemeriksaan kesehatan API dapat diverifikasi melalui:
+```bash
+curl -s http://localhost:8000/api/v1/health
+```
+
+### Langkah 7: Jalankan Frontend Web App
+Pada terminal terpisah, masuk ke direktori frontend dan jalankan server statis HTTP lokal pada port 5173:
+```bash
+python3 -m http.server 5173 --directory src/frontend
+```
+Buka peramban web dan akses: **`http://localhost:5173`**.
+
+---
+
+## 4. Kredensial Akun Demo & Dokumentasi API
+
+Untuk menguji seluruh fitur aplikasi, gunakan akun demo siap pakai:
+
+| Parameter | Keterangan Akun Demo |
+|---|---|
+| **Email** | `demo@stockwise.id` |
+| **Kata Sandi** | `Demo1234!` |
+| **Nama Usaha** | Dapur Katering Berkah |
+| **Tipe Usaha** | Katering |
+| **Paket Awal** | Freemium |
+
+### Dokumentasi Interaktif & Health Check
+- **Swagger UI (OpenAPI):** [http://localhost:8000/docs](http://localhost:8000/docs)
+- **ReDoc:** [http://localhost:8000/redoc](http://localhost:8000/redoc)
+- **Health Check Endpoint:** [http://localhost:8000/api/v1/health](http://localhost:8000/api/v1/health)
+
+---
+
+## 5. Cara Menjalankan Pengujian Otomatis (Pytest)
+
+Test suite StockWise mencakup pengujian unit algoritma inti (*pure math & FEFO simulation*) serta pengujian integrasi endpoint API (*authentication, authorization, session cookies, rate limiting, forecast horizons, dan data isolation*).
+
+### Menjalankan Seluruh Rangkaian Pengujian
+```bash
+docker compose -f deploy/compose/docker-compose.dev.yml run --rm api pytest
+```
+
+### Menjalankan Pengujian Unit Algoritma Saja
+```bash
+docker compose -f deploy/compose/docker-compose.dev.yml run --rm api pytest tests/unit/lib
+```
+
+### Menjalankan Pengujian Integrasi API Saja
+```bash
+docker compose -f deploy/compose/docker-compose.dev.yml run --rm api pytest tests/api
+```
+
+---
+
+## 6. Prosedur Reset Data Demo (Idempoten)
+
+Jika selama pengujian demo Anda melakukan perubahan data (misalnya menambah transaksi, mengubah stok, atau melakukan upgrade paket ke Pro) dan ingin mengembalikan kondisi data demo ke kondisi awal yang bersih:
+
+Jalankan perintah berikut:
+```bash
+docker compose -f deploy/compose/docker-compose.dev.yml run --rm api python -m app.seed
+```
+
+> **Perilaku Idempotensi:** Skrip `app.seed` mendeteksi keberadaan akun `demo@stockwise.id`. Jika akun sudah ada, skrip akan menghapus data lama akun tersebut beserta seluruh rekaman relasionalnya secara bersih via cascade, lalu menyuntikkan ulang data awal yang terkalibrasi relatif terhadap tanggal hari ini secara deterministik.
+
+*(Opsional: Untuk menghapus volume seluruh database PostgreSQL stack development dan mengulang dari nol, gunakan perintah `docker compose -f deploy/compose/docker-compose.dev.yml down -v` lalu ulangi Langkah 3 sampai 6 di atas).*
+
+---
+
+## 7. Catatan Fitur Simulasi (Tugas Akademik)
+
+Sesuai rancangan pada dokumen spesifikasi kebutuhan, beberapa integrasi eksternal disimulasikan secara lokal untuk kebutuhan pengujian fungsional:
+1. **Pembayaran Langganan Pro (UC-11):** Tombol checkout simulasi langsung mengaktifkan status paket pengguna menjadi Pro (`role: pro`, perpanjangan 30 hari) dan mencatat bukti pembayaran tanpa integrasi ke *payment gateway* pihak ketiga (Midtrans/Xendit).
+2. **Sinkronisasi Kanal Penjualan (UC-13):** Tombol sinkronisasi MokaPOS, GoFood, GrabFood, dan Shopee Partner membangkitkan pesanan mock secara otomatis untuk pengguna Pro guna mensimulasikan penarikan pesanan tanpa ketergantungan API pihak ketiga.
+3. **Formulir Feedback (UC-12):** Formulir umpan balik menyimpan pesan dan rating bintang (1–5) langsung ke tabel database `feedback` tanpa mengirimkan email/notifikasi eksternal.
+
+---
+
+## 8. Ringkasan Arsitektur & Logika Inti
+
+- **Time-Series Exponential Smoothing (UC-08):** Mengoptimasi parameter smoothing $\alpha \in [0.05, 0.5]$ berdasarkan error historis (WAPE) terendah pada 28 hari terakhir, mengisolasi efek musiman hari dalam seminggu (*day-of-week*), dan memperhitungkan dampak hari khusus (*event multiplier*).
+- **Rekomendasi Belanja & Simulasi FEFO (UC-06 & UC-07):** Mengonversi kebutuhan menu menjadi kebutuhan bahan mentah via tabel komposisi resep. Sistem mensimulasikan pergerakan inventaris harian hingga 60 hari ke depan dengan aturan konsumsi bahan yang paling mendekati tanggal kedaluwarsa terlebih dahulu. Jika rasio potensi limbah melebihi ambang batas, sistem menampilkan **Waste Risk Score** (*rendah* $<10\%$, *sedang* $10\%–30\%$, *tinggi* $>30\%$) dan memberikan rekomendasi penurunan jumlah pembelian aman (*safe-buy*).
+- **Keamanan & Manajemen Sesi (UC-01):** Autentikasi berbasis JWT yang disimpan di dalam cookie peramban dengan atribut `HttpOnly` dan `SameSite=Lax`. Endpoint login dan registrasi dilindungi pembatas laju request (*rate limiting*) 5 request per menit.

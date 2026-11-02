@@ -1,0 +1,2 @@
+"""StockWise FastAPI application package."""
+
