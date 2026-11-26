@@ -12,9 +12,14 @@ dist/
 .env
 *.env
 .env.*
-!env.example
+
+# Template environment aman di-commit
 !*.env.example
-!development.env.example
+!src/backend/app/config/env/development.env.example
+!src/backend/app/config/env/supabase.env.example
+
+# File environment asli dengan kredensial tetap ignored
+src/backend/app/config/env/supabase.env
 
 # Testing & Coverage
 .pytest_cache/

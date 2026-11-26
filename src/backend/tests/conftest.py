@@ -1,9 +1,30 @@
+import os
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 
 from app.connections.postgres import engine
 from app.main import app
 from app.middleware.rate_limit import rate_limiter
+from app.settings import settings
+
+
+def pytest_configure(config):
+    """Cegah test menulis ke database Supabase tanpa izin eksplisit.
+
+    Test API membuat pengguna dan transaksi nyata. Jalankan test terhadap
+    PostgreSQL lokal, atau set ALLOW_REMOTE_TESTS=1 bila memakai project
+    Supabase khusus untuk pengujian.
+    """
+    host = (settings.POSTGRES_HOST or "").lower()
+    database_url = (settings.DATABASE_URL or "").lower()
+    is_remote = "supabase" in host or "supabase" in database_url
+    if is_remote and os.getenv("ALLOW_REMOTE_TESTS") != "1":
+        pytest.exit(
+            "Test suite menulis data nyata. Gunakan PostgreSQL lokal atau set "
+            "ALLOW_REMOTE_TESTS=1 jika memakai project Supabase khusus test.",
+            returncode=2,
+        )
 
 
 @pytest.fixture(autouse=True)

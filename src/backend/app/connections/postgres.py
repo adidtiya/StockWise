@@ -14,11 +14,18 @@ try:
     )
     from sqlalchemy.orm import declarative_base
 
+    connect_args: dict[str, Any] = {}
+    if settings.DB_STATEMENT_CACHE_SIZE >= 0:
+        connect_args["statement_cache_size"] = settings.DB_STATEMENT_CACHE_SIZE
+        connect_args["prepared_statement_cache_size"] = settings.DB_STATEMENT_CACHE_SIZE
+
     engine: AsyncEngine = create_async_engine(
         settings.database_url,
-        pool_size=20,
-        max_overflow=10,
+        pool_size=settings.DB_POOL_SIZE,
+        max_overflow=settings.DB_MAX_OVERFLOW,
+        pool_recycle=settings.DB_POOL_RECYCLE,
         pool_pre_ping=True,
+        connect_args=connect_args,
         echo=False,
     )
 
@@ -53,8 +60,9 @@ except ImportError:  # pragma: no cover
 
     engine = _FallbackEngine(  # type: ignore[assignment]
         settings.database_url,
-        pool_size=20,
-        max_overflow=10,
+        pool_size=settings.DB_POOL_SIZE,
+        max_overflow=settings.DB_MAX_OVERFLOW,
+        pool_recycle=settings.DB_POOL_RECYCLE,
         pool_pre_ping=True,
         echo=False,
     )

@@ -80,7 +80,7 @@ Tujuan: Memisahkan frontend ke target direktori baru dan menyiapkan kerangka ker
     5. Tambahkan pengecualian file basis data lokal & volume: `*.sqlite`, `*.db`, `postgres_data_*`.
     6. Pertahankan pengecualian Node.js eksisting: `node_modules/`, `npm-debug.log`.
   * **Kriteria Selesai:**
-    * File `.gitignore` memuat baris `*.env` dan `!development.env.example` (atau `!env.example`).
+    * File `.gitignore` memuat baris `*.env` dan pengecualian `!*.env.example` (termasuk `development.env.example` dan `supabase.env.example`).
     * Perintah `git status --ignored` mengenali file `.env` virtual sebagai ignored.
 
 - [x] **T-0.4 Audit kode prototipe Node.js/SQLite terhadap target FastAPI**
@@ -119,9 +119,9 @@ Tujuan: Menginisialisasi aplikasi FastAPI, container Docker lokal, koneksi asink
   * **Ukuran:** S
   * **Rujukan:** TRD 3.2, TRD 8.4, TRD 10.1
   * **Dependensi:** T-1.1
-  * **File:** `src/backend/app/settings.py`, `src/backend/app/config/env/env.example`
+  * **File:** `src/backend/app/settings.py`, `src/backend/app/config/env/development.env.example`, `src/backend/app/config/env/supabase.env.example`
   * **Langkah:**
-    1. Buat `src/backend/app/config/env/env.example` berisi variabel: `APP_ENV`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `POSTGRES_HOST`, `POSTGRES_PORT`, `JWT_SECRET`, `CORS_ORIGINS`, `ACCESS_TOKEN_EXPIRE_MINUTES=15`, `REFRESH_TOKEN_EXPIRE_DAYS=7`, `RATE_LIMIT_AUTH=5/minute`, `RATE_LIMIT_DEFAULT=60/minute`.
+    1. Buat `src/backend/app/config/env/development.env.example` untuk lokal dan `supabase.env.example` untuk Supabase. Template lokal berisi variabel: `APP_ENV`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `POSTGRES_HOST`, `POSTGRES_PORT`, `JWT_SECRET`, `CORS_ORIGINS`, `ACCESS_TOKEN_EXPIRE_MINUTES=15`, `REFRESH_TOKEN_EXPIRE_DAYS=7`, `RATE_LIMIT_AUTH=5/minute`, `RATE_LIMIT_DEFAULT=60/minute`.
     2. Buat kelas `Settings(BaseSettings)` di `src/backend/app/settings.py` menggunakan `pydantic_settings`.
     3. Sediakan properti komputasi `database_url` berformat `postgresql+asyncpg://{user}:{password}@{host}:{port}/{db}`.
     4. Instansiasi objek singleton `settings = Settings()`.
@@ -151,7 +151,7 @@ Tujuan: Menginisialisasi aplikasi FastAPI, container Docker lokal, koneksi asink
     1. Buat `deploy/docker/backend.dev.Dockerfile` berbasis `python:3.11-slim`, instalasi `build-essential` dan `libpq-dev`, pasang non-root user `appuser:appgroup`, dan CMD uvicorn dengan reload.
     2. Buat skrip pembungkus start `deploy/docker/entrypoints/api.sh` yang menjalankan uvicorn pada port 8000 dan berikan izin eksekusi (`chmod +x`).
     3. Buat `deploy/compose/docker-compose.dev.yml` yang mendefinisikan dua service: `db` (`postgres:16` dengan healthcheck pg_isready dan volume `postgres_data_dev`) dan `api` (build dari Dockerfile dev, mounting volume kode sumber, dan `depends_on: db: condition: service_healthy`).
-    4. Salin `env.example` ke `src/backend/app/config/env/development.env` untuk kebutuhan lokal.
+    4. Salin `development.env.example` ke `src/backend/app/config/env/development.env` untuk kebutuhan lokal.
   * **Kriteria Selesai:**
     * Perintah `docker compose -f deploy/compose/docker-compose.dev.yml config` valid tanpa sintaks error.
     * Service `db` dapat dijalankan via `docker compose -f deploy/compose/docker-compose.dev.yml up -d db` dan mencapai status healthy.

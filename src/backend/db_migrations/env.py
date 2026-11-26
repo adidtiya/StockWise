@@ -6,7 +6,7 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
-from sqlalchemy.ext.asyncio import async_engine_from_config
+from sqlalchemy.ext.asyncio import create_async_engine
 
 import app.models  # noqa: F401
 from app.connections.postgres import Base
@@ -17,18 +17,16 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-config.set_main_option("sqlalchemy.url", settings.database_url)
-
 target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
-    url = config.get_main_option("sqlalchemy.url")
     context.configure(
-        url=url,
+        url=settings.migration_database_url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        version_table_schema="public",
     )
 
     with context.begin_transaction():
@@ -36,16 +34,20 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection: Connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata)
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        version_table_schema="public",
+        compare_type=True,
+    )
 
     with context.begin_transaction():
         context.run_migrations()
 
 
 async def run_async_migrations() -> None:
-    connectable = async_engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
+    connectable = create_async_engine(
+        settings.migration_database_url,
         poolclass=pool.NullPool,
     )
 

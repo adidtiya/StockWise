@@ -1,6 +1,11 @@
 import { toast } from './ui.js';
 
-const BASE_URL = (typeof window !== 'undefined' && window.__API_BASE__) || 'http://localhost:8000/api/v1';
+const isLocalhost =
+  typeof window !== 'undefined' &&
+  ['localhost', '127.0.0.1', '::1', '[::1]'].includes(window.location.hostname);
+const BASE_URL =
+  (typeof window !== 'undefined' && window.__API_BASE__) ||
+  (isLocalhost ? 'http://localhost:8000/api/v1' : '/api/v1');
 
 let onUnauthorized = () => {};
 export function setUnauthorizedHandler(fn) {

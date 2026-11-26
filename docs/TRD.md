@@ -192,7 +192,8 @@ StockWise/
         │   │       └── handlers.py            # Global exception handlers & setup
         │   ├── config/
         │   │   └── env/
-        │   │       └── env.example        # salin ke development.env
+        │   │       ├── development.env.example  # salin ke development.env
+        │   │       └── supabase.env.example     # salin ke supabase.env
         │   ├── connections/
         │   │   └── postgres.py            # Async engine & session (PostgreSQL)
         │   ├── lib/
@@ -240,7 +241,7 @@ StockWise/
 1. **Satu folder per domain** di `app/api/`, berisi empat file dengan tanggung jawab tetap: `views.py` (router FastAPI), `schema.py` (DTO Pydantic), `repository.py` (query SQLAlchemy async), `use_cases.py` (logika bisnis).
 2. **`api/main.py`** menjadi satu-satunya tempat `include_router` semua domain; `app/main.py` memasang middleware, exception handler, dan `health` di prefix `/api/v1`.
 3. **Penamaan & Exceptions:** folder domain berbentuk tunggal snake_case, model berakhiran `_model.py`, dan seluruh custom domain exception dikelompokkan ke dalam `api/exceptions/exceptions.py` dengan handler terpusat di `handlers.py`.
-4. **Konfigurasi Environment:** `development.env` dibuat dari `env.example` dan dimuat lewat `env_file` pada Docker Compose.
+4. **Konfigurasi Environment:** `development.env` dibuat dari `development.env.example`, sedangkan `supabase.env` dibuat dari `supabase.env.example`; keduanya dimuat lewat `env_file` pada Docker Compose.
 5. **Migrasi Database:** Dijalankan dengan perintah Alembic (`alembic upgrade head`) sebelum kontainer API start pada alur setup development.
 6. **Logika algoritma** (forecast, FEFO) ditaruh di `app/lib/` agar dapat diuji unit tanpa database; `use_cases.py` hanya memanggilnya.
 7. **Prefix API:** seluruh router berada di bawah `/api/v1`. `src/frontend/js/api.js` harus menyesuaikan base path dari `/api` menjadi `/api/v1`.
@@ -1801,7 +1802,7 @@ volumes:
 
 ### 8.4 Environment Development (`src/backend/app/config/env/development.env`)
 
-Salin dari `env.example`, lalu isi nilai konfigurasi lokal:
+Salin dari `development.env.example`, lalu isi nilai konfigurasi lokal:
 
 ```env
 APP_ENV=development
@@ -1821,13 +1822,13 @@ RATE_LIMIT_AUTH=5/minute
 RATE_LIMIT_DEFAULT=60/minute
 ```
 
-File `*.env` tidak boleh masuk Git (sudah ada di `.gitignore`); hanya `env.example` yang di-commit. Nama variabel dan nilai default didefinisikan pada `settings.py` (`Pydantic BaseSettings`).
+File `*.env` tidak boleh masuk Git (sudah ada di `.gitignore`); hanya template `*.env.example` (termasuk `development.env.example` dan `supabase.env.example`) yang di-commit. Nama variabel dan nilai default didefinisikan pada `settings.py` (`Pydantic BaseSettings`).
 
 ### 8.5 Menjalankan Development
 
 ```bash
 # 1. Siapkan environment
-cp src/backend/app/config/env/env.example src/backend/app/config/env/development.env
+cp src/backend/app/config/env/development.env.example src/backend/app/config/env/development.env
 
 # 2. Jalankan PostgreSQL
 docker-compose -f deploy/compose/docker-compose.dev.yml up -d db

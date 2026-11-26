@@ -1,0 +1,19 @@
+.git
+.github
+.claude
+docs
+deploy
+tests
+src/backend/tests
+
+**/__pycache__
+**/.pytest_cache
+.pytest_cache
+.coverage
+htmlcov
+
+# Jangan pernah unggah file environment asli ke Vercel.
+**/*.env
+src/backend/app/config/env/supabase.env
+
+*.dump

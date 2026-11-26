@@ -1,0 +1,50 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "frontend": {
+      "root": "src/frontend/"
+    },
+    "backend": {
+      "root": "src/backend/",
+      "framework": "fastapi",
+      "entrypoint": "app.main:app",
+      "functions": {
+        "app/main.py": {
+          "maxDuration": 60,
+          "regions": ["hnd1"]
+        }
+      }
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": { "service": "backend" }
+    },
+    {
+      "source": "/docs",
+      "destination": { "service": "backend" }
+    },
+    {
+      "source": "/redoc",
+      "destination": { "service": "backend" }
+    },
+    {
+      "source": "/openapi.json",
+      "destination": { "service": "backend" }
+    },
+    {
+      "source": "/healthz",
+      "destination": { "service": "backend" }
+    },
+    {
+      "source": "/(.*)",
+      "destination": { "service": "frontend" }
+    }
+  ],
+  "git": {
+    "deploymentEnabled": {
+      "main": false
+    }
+  }
+}

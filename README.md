@@ -67,10 +67,11 @@ Situs resmi Docker: [Docker Desktop Overview](https://www.docker.com/products/do
 Ikuti langkah-langkah di bawah ini untuk mengklon, menyiapkan, dan menyalakan aplikasi dari awal:
 
 ### Langkah 1: Siapkan File Environment Backend
-Salin berkas templat environment `env.example` ke file konfigurasi development:
+Salin berkas templat environment lokal `development.env.example` ke file konfigurasi development:
 ```bash
-cp src/backend/app/config/env/env.example src/backend/app/config/env/development.env
+cp src/backend/app/config/env/development.env.example src/backend/app/config/env/development.env
 ```
+Untuk mode Supabase, gunakan `supabase.env.example` seperti dijelaskan pada bagian **Mode Supabase** di bawah.
 
 ### Langkah 2: Bangun Image Kontainer Backend
 Bangun image Docker backend berbasis Python 3.11:
@@ -116,6 +117,57 @@ Pada terminal terpisah, masuk ke direktori frontend dan jalankan server statis H
 python3 -m http.server 5173 --directory src/frontend
 ```
 Buka peramban web dan akses: **`http://localhost:5173`**.
+
+---
+
+### Mode Supabase (Opsional, untuk Demo/Deployment)
+
+PostgreSQL lokal di atas tetap dipakai untuk development dan pengujian. Untuk
+memakai Supabase sebagai database demo/deployment:
+
+1. Jika `supabase.env` belum ada, salin templat environment:
+   ```bash
+   cp src/backend/app/config/env/supabase.env.example src/backend/app/config/env/supabase.env
+   ```
+2. Isi `POSTGRES_USER`, `POSTGRES_PASSWORD`, dan `POSTGRES_HOST` dari
+   **Supabase Dashboard → Connect → Session pooler**. Gunakan database `postgres`
+   dan port `5432`; jangan pakai anon/service_role key.
+3. Jalankan migrasi, seed, dan API:
+   ```bash
+   docker compose -f deploy/compose/docker-compose.supabase.yml build
+   docker compose -f deploy/compose/docker-compose.supabase.yml run --rm api alembic upgrade head
+   docker compose -f deploy/compose/docker-compose.supabase.yml run --rm api python -m app.seed
+   docker compose -f deploy/compose/docker-compose.supabase.yml up -d api
+   ```
+4. Verifikasi `http://localhost:8000/api/v1/health`, lalu jalankan SQL keamanan di
+   [`docs/SUPABASE.md`](docs/SUPABASE.md#5-amankan-akses-data-api) agar tabel tidak
+   dapat diakses lewat role `anon`/`authenticated`.
+5. Jangan menjalankan `pytest` terhadap Supabase; test membuat data nyata. Gunakan
+   PostgreSQL lokal atau project Supabase khusus test dengan `ALLOW_REMOTE_TESTS=1`.
+
+Panduan lengkap (mode koneksi, troubleshooting, backup) ada di
+[`docs/SUPABASE.md`](docs/SUPABASE.md).
+
+---
+
+### Deploy ke Vercel
+
+Repository sudah menyiapkan konfigurasi Vercel Services:
+
+- `vercel.json` — frontend static + backend FastAPI dalam satu domain.
+- `.vercelignore` — mencegah file environment/kredensial ikut terunggah.
+- `src/backend/.python-version` — Python 3.12.
+- `.github/workflows/deploy-production.yml` — migrasi Supabase lalu memicu Deploy Hook.
+
+Langkah singkat:
+
+1. Import repository ke Vercel dengan root directory repo.
+2. Isi environment variables production (transaction pooler port `6543`, `DB_STATEMENT_CACHE_SIZE=0`).
+3. Buat Deploy Hook untuk branch `main`.
+4. Tambahkan GitHub Secrets: `SUPABASE_SESSION_DATABASE_URL` dan `VERCEL_DEPLOY_HOOK_URL`.
+5. Jalankan workflow **Deploy Production**, lalu seed manual jika diperlukan.
+
+Panduan lengkap: [`docs/VERCEL.md`](docs/VERCEL.md).
 
 ---
 
